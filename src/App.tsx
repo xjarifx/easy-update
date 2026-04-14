@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Calendar from "./Calendar";
+import Calendar, { type CalendarEvent } from "./Calendar";
 import "./App.css";
 
 type Page = "input" | "notice" | "calendar" | "setting";
@@ -50,25 +50,95 @@ function InputPage() {
   );
 }
 
-function NoticePage() {
+function getTodayLocalDate() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+interface NoticePageProps {
+  events: CalendarEvent[];
+}
+
+function NoticePage({ events }: NoticePageProps) {
+  const parseEventDate = (value: Date | string) => {
+    if (value instanceof Date) {
+      return value;
+    }
+
+    return new Date(value.includes("T") ? value : `${value}T00:00:00`);
+  };
+
+  const formatDisplayDate = (value: Date | string) => {
+    const date = parseEventDate(value);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = date.toLocaleString("en-US", { month: "short" });
+    const year = date.getFullYear();
+
+    return `${day}-${month}-${year}`;
+  };
+
+  const formatDisplayTime = (value: string) => {
+    const date = parseEventDate(value);
+
+    return date.toLocaleString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const getEventDate = (value: string) => {
+    return formatDisplayDate(value);
+  };
+
+  const getEventTime = (value: string) => {
+    return value.includes("T") ? formatDisplayTime(value) : "12:00 AM";
+  };
+
   return (
     <section className="h-full rounded-none border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-2xl font-semibold text-slate-900">Notice</h2>
       <p className="mt-1 text-sm text-slate-600">
-        Important reminders and announcements.
+        All events are shown in ascending date and time order.
       </p>
 
-      <ul className="mt-5 grid gap-3">
-        <li className="border-l-4 border-amber-500 bg-amber-50 p-3 text-sm text-slate-800">
-          Review today&apos;s events before end of day.
-        </li>
-        <li className="border-l-4 border-blue-500 bg-blue-50 p-3 text-sm text-slate-800">
-          Use the Calendar page to create and track scheduled items.
-        </li>
-        <li className="border-l-4 border-emerald-500 bg-emerald-50 p-3 text-sm text-slate-800">
-          Keep Input notes concise for better readability.
-        </li>
-      </ul>
+      <div className="mt-5">
+        {events.length === 0 ? (
+          <p className="text-sm text-slate-500">No events available yet.</p>
+        ) : (
+          <div className="overflow-hidden border border-slate-200 bg-white">
+            <div className="grid grid-cols-[140px_120px_minmax(0,1fr)] border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+              <div>Date</div>
+              <div>Time</div>
+              <div>Event</div>
+            </div>
+            <div className="divide-y divide-slate-200">
+              {events
+                .slice()
+                .sort(
+                  (a, b) =>
+                    new Date(a.start).getTime() - new Date(b.start).getTime(),
+                )
+                .map((event) => (
+                  <div
+                    key={event.id}
+                    className="grid grid-cols-[140px_120px_minmax(0,1fr)] items-center px-4 py-3 text-sm text-slate-800"
+                  >
+                    <div className="font-medium text-slate-900">
+                      {getEventDate(event.start)}
+                    </div>
+                    <div>{getEventTime(event.start)}</div>
+                    <div className="truncate">{event.title}</div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -308,6 +378,13 @@ function SettingPage() {
 
 function App() {
   const [activePage, setActivePage] = useState<Page>("calendar");
+  const [events, setEvents] = useState<CalendarEvent[]>([
+    {
+      id: "1",
+      title: "Event 1",
+      start: `${getTodayLocalDate()}T09:00:00`,
+    },
+  ]);
 
   const navItems: { id: Page; label: string }[] = [
     { id: "input", label: "Input" },
@@ -344,8 +421,10 @@ function App() {
 
         <section className="min-w-0 overflow-auto p-4 md:p-6">
           {activePage === "input" && <InputPage />}
-          {activePage === "notice" && <NoticePage />}
-          {activePage === "calendar" && <Calendar />}
+          {activePage === "notice" && <NoticePage events={events} />}
+          {activePage === "calendar" && (
+            <Calendar events={events} setEvents={setEvents} />
+          )}
           {activePage === "setting" && <SettingPage />}
         </section>
       </div>

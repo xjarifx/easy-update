@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -16,9 +16,16 @@ function getTodayLocalDate() {
   return formatLocalDate(new Date());
 }
 
+function parseEventDate(value: Date | string) {
+  if (value instanceof Date) {
+    return value;
+  }
+
+  return new Date(value.includes("T") ? value : `${value}T00:00:00`);
+}
+
 function formatDisplayDate(value: Date | string) {
-  const date =
-    typeof value === "string" ? new Date(`${value}T00:00:00`) : value;
+  const date = parseEventDate(value);
   const day = String(date.getDate()).padStart(2, "0");
   const month = date.toLocaleString("en-US", { month: "short" });
   const year = date.getFullYear();
@@ -27,7 +34,7 @@ function formatDisplayDate(value: Date | string) {
 }
 
 function formatDisplayTime(value: Date | string) {
-  const date = typeof value === "string" ? new Date(value) : value;
+  const date = parseEventDate(value);
 
   return date.toLocaleString("en-US", {
     hour: "2-digit",
@@ -58,22 +65,20 @@ function formatCalendarEventChip(start: Date | null, title: string) {
   return `${displayHour}.${minutes}${suffix} ${title}`;
 }
 
-interface CalendarEvent {
+export interface CalendarEvent {
   title: string;
   start: string;
   end?: string;
   id: string;
 }
 
-export default function Calendar() {
+interface CalendarProps {
+  events: CalendarEvent[];
+  setEvents: Dispatch<SetStateAction<CalendarEvent[]>>;
+}
+
+export default function Calendar({ events, setEvents }: CalendarProps) {
   const calendarRef = useRef(null);
-  const [events, setEvents] = useState<CalendarEvent[]>([
-    {
-      id: "1",
-      title: "Event 1",
-      start: `${getTodayLocalDate()}T09:00:00`,
-    },
-  ]);
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(getTodayLocalDate());
   const [formData, setFormData] = useState({
