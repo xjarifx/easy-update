@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Calendar from "./Calendar";
 import "./App.css";
 
@@ -197,6 +197,23 @@ function SettingPage() {
     }
   };
 
+  useEffect(() => {
+    const key = apiKey.trim();
+
+    if (!key) {
+      setAvailableModels([]);
+      setSelectedModel("");
+      setError("");
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void loadModelsForProvider();
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [apiKey, selectedProvider]);
+
   return (
     <section className="h-full border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-2xl font-semibold text-slate-900">Setting</h2>
@@ -258,20 +275,6 @@ function SettingPage() {
               className="border border-slate-300 px-3 py-2 text-slate-900 ring-blue-500 outline-none focus:ring-2"
             />
           </label>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={loadModelsForProvider}
-              className="bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              {isLoadingModels ? "Loading..." : "Load Models"}
-            </button>
-            <span className="text-xs text-slate-500">
-              Loads model list for the selected provider using this key.
-            </span>
-          </div>
-
           <label className="grid gap-1 text-sm font-medium text-slate-700">
             AI Model (Available for This Key)
             <select
@@ -291,6 +294,10 @@ function SettingPage() {
               )}
             </select>
           </label>
+
+          {isLoadingModels ? (
+            <p className="text-xs text-slate-500">Loading models...</p>
+          ) : null}
 
           {error ? <p className="text-xs text-red-600">{error}</p> : null}
         </div>
