@@ -549,6 +549,132 @@ type NoticeItem = {
   event: string;
 };
 
+const noticeMonthByShortName: Record<string, number> = {
+  JAN: 1,
+  FEB: 2,
+  MAR: 3,
+  APR: 4,
+  MAY: 5,
+  JUN: 6,
+  JUL: 7,
+  AUG: 8,
+  SEP: 9,
+  OCT: 10,
+  NOV: 11,
+  DEC: 12,
+};
+
+const noticeShortMonthByIndex = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+function parseNoticeDateParts(value: string) {
+  const trimmed = value.trim();
+  const isoDateMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  const shortMonthMatch = trimmed.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+  const numericDmyMatch = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  const ymdSlashMatch = trimmed.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  const verboseMonthMatch = trimmed.match(
+    /^([A-Za-z]{3,9})\s+(\d{1,2}),\s*(\d{4})$/,
+  );
+
+  if (isoDateMatch) {
+    return {
+      year: Number(isoDateMatch[1]),
+      month: Number(isoDateMatch[2]),
+      day: Number(isoDateMatch[3]),
+    };
+  }
+
+  if (shortMonthMatch) {
+    const month = noticeMonthByShortName[shortMonthMatch[2].toUpperCase()];
+
+    if (month) {
+      return {
+        year: Number(shortMonthMatch[3]),
+        month,
+        day: Number(shortMonthMatch[1]),
+      };
+    }
+  }
+
+  if (numericDmyMatch) {
+    return {
+      year: Number(numericDmyMatch[3]),
+      month: Number(numericDmyMatch[2]),
+      day: Number(numericDmyMatch[1]),
+    };
+  }
+
+  if (ymdSlashMatch) {
+    return {
+      year: Number(ymdSlashMatch[1]),
+      month: Number(ymdSlashMatch[2]),
+      day: Number(ymdSlashMatch[3]),
+    };
+  }
+
+  if (verboseMonthMatch) {
+    const month =
+      noticeMonthByShortName[verboseMonthMatch[1].slice(0, 3).toUpperCase()];
+
+    if (month) {
+      return {
+        year: Number(verboseMonthMatch[3]),
+        month,
+        day: Number(verboseMonthMatch[2]),
+      };
+    }
+  }
+
+  return null;
+}
+
+function isValidNoticeDate(year: number, month: number, day: number) {
+  if (year < 0 || month < 1 || month > 12 || day < 1 || day > 31) {
+    return false;
+  }
+
+  const candidate = new Date(year, month - 1, day);
+
+  return (
+    candidate.getFullYear() === year &&
+    candidate.getMonth() === month - 1 &&
+    candidate.getDate() === day
+  );
+}
+
+function formatNoticeDate(value: string) {
+  const parts = parseNoticeDateParts(value);
+
+  if (!parts) {
+    return value;
+  }
+
+  if (!isValidNoticeDate(parts.year, parts.month, parts.day)) {
+    return value;
+  }
+
+  const month = noticeShortMonthByIndex[parts.month - 1];
+
+  if (!month) {
+    return value;
+  }
+
+  return `${parts.day.toString().padStart(2, "0")}-${month}-${parts.year}`;
+}
+
 function NoticePage() {
   const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -561,21 +687,16 @@ function NoticePage() {
     event: "",
   });
 
-  const parseEventDate = (value: Date | string) => {
+  const formatDisplayDate = (value: Date | string) => {
     if (value instanceof Date) {
-      return value;
+      const day = String(value.getDate()).padStart(2, "0");
+      const month = value.toLocaleString("en-US", { month: "short" });
+      const year = value.getFullYear();
+
+      return `${day}-${month}-${year}`;
     }
 
-    return new Date(value.includes("T") ? value : `${value}T00:00:00`);
-  };
-
-  const formatDisplayDate = (value: Date | string) => {
-    const date = parseEventDate(value);
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = date.toLocaleString("en-US", { month: "short" });
-    const year = date.getFullYear();
-
-    return `${day}-${month}-${year}`;
+    return formatNoticeDate(value);
   };
 
   const loadNotices = useCallback(async () => {
