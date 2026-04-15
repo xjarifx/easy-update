@@ -12,6 +12,8 @@ function InputPage() {
   const [documents, setDocuments] = useState<File[]>([]);
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [isDocumentDropActive, setIsDocumentDropActive] = useState(false);
+  const [isImageDropActive, setIsImageDropActive] = useState(false);
 
   const inputTabs: { id: InputTab; label: string; description: string }[] = [
     {
@@ -68,6 +70,12 @@ function InputPage() {
     setImages((prev) => [...prev, ...nextImages]);
   };
 
+  const totalDocumentBytes = documents.reduce(
+    (sum, file) => sum + file.size,
+    0,
+  );
+  const totalImageBytes = images.reduce((sum, file) => sum + file.size, 0);
+
   useEffect(() => {
     const previewUrls = images.map((image) => URL.createObjectURL(image));
     setImagePreviews(previewUrls);
@@ -113,6 +121,19 @@ function InputPage() {
           <div className="mt-4">
             {activeTab === "text" && (
               <div className="grid gap-3">
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                  <p>
+                    Optimized for large pasted content and long-form drafts.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setTextInput("")}
+                    className="shrink-0 px-3 py-1 font-medium text-red-600 hover:bg-red-50"
+                  >
+                    Clear text
+                  </button>
+                </div>
+
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   Large Text Input
                   <textarea
@@ -157,7 +178,24 @@ function InputPage() {
 
             {activeTab === "documents" && (
               <div className="grid gap-4">
-                <label className="grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600 transition hover:border-blue-400 hover:bg-blue-50/40">
+                <label
+                  className={`grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed bg-white p-6 text-sm text-slate-600 transition hover:border-blue-400 hover:bg-blue-50/40 ${
+                    isDocumentDropActive
+                      ? "border-blue-500 bg-blue-50/60"
+                      : "border-slate-300"
+                  }`}
+                  onDragEnter={() => setIsDocumentDropActive(true)}
+                  onDragLeave={() => setIsDocumentDropActive(false)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDocumentDropActive(true);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDocumentDropActive(false);
+                    handleDocumentUpload(e.dataTransfer.files);
+                  }}
+                >
                   <div>
                     <p className="font-semibold text-slate-900">
                       Drop or select documents
@@ -184,6 +222,17 @@ function InputPage() {
                     <p className="text-xs text-slate-500">
                       {documents.length} file{documents.length === 1 ? "" : "s"}
                     </p>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    <p>Total size: {formatFileSize(totalDocumentBytes)}</p>
+                    <button
+                      type="button"
+                      onClick={() => setDocuments([])}
+                      className="px-2 py-1 font-medium text-red-600 hover:bg-red-50"
+                    >
+                      Clear all
+                    </button>
                   </div>
 
                   <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
@@ -228,7 +277,24 @@ function InputPage() {
 
             {activeTab === "images" && (
               <div className="grid gap-4">
-                <label className="grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600 transition hover:border-blue-400 hover:bg-blue-50/40">
+                <label
+                  className={`grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed bg-white p-6 text-sm text-slate-600 transition hover:border-blue-400 hover:bg-blue-50/40 ${
+                    isImageDropActive
+                      ? "border-blue-500 bg-blue-50/60"
+                      : "border-slate-300"
+                  }`}
+                  onDragEnter={() => setIsImageDropActive(true)}
+                  onDragLeave={() => setIsImageDropActive(false)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsImageDropActive(true);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsImageDropActive(false);
+                    handleImageUpload(e.dataTransfer.files);
+                  }}
+                >
                   <div>
                     <p className="font-semibold text-slate-900">
                       Drop or select images
@@ -255,6 +321,17 @@ function InputPage() {
                     <p className="text-xs text-slate-500">
                       {images.length} image{images.length === 1 ? "" : "s"}
                     </p>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    <p>Total size: {formatFileSize(totalImageBytes)}</p>
+                    <button
+                      type="button"
+                      onClick={() => setImages([])}
+                      className="px-2 py-1 font-medium text-red-600 hover:bg-red-50"
+                    >
+                      Clear all
+                    </button>
                   </div>
 
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -551,6 +628,9 @@ function SettingPage() {
         <p className="mt-1 text-sm text-slate-600">
           Step 1: choose your provider. Step 2: paste that provider&apos;s API
           key. Step 3: load and select a model available for that key.
+        </p>
+        <p className="mt-1 text-xs text-slate-500">
+          Model search runs automatically after you paste the API key.
         </p>
 
         <div className="mt-4 grid gap-4">
