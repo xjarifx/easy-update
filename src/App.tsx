@@ -4,6 +4,119 @@ import "./App.css";
 
 type Page = "input" | "notice" | "calendar" | "setting";
 
+type ProviderId = "openrouter" | "openai" | "anthropic" | "google";
+
+type EncryptedValue = {
+  iv: string;
+  data: string;
+};
+
+type SavedApiSettings = {
+  provider: ProviderId;
+  apiKey: EncryptedValue;
+  selectedModel: string;
+};
+
+const SETTINGS_STORAGE_KEY = "easy-update.settings.v1";
+const ENCRYPTION_SECRET_KEY = "easy-update.settings.secret";
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+
+  return window.btoa(binary);
+}
+
+function base64ToBytes(base64: string) {
+  const binary = window.atob(base64);
+
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
+async function getEncryptionKey() {
+  const storedSecret = window.localStorage.getItem(ENCRYPTION_SECRET_KEY);
+  let secret = storedSecret;
+
+  if (!secret) {
+    const generatedSecret = window.crypto.getRandomValues(new Uint8Array(32));
+    secret = bytesToBase64(generatedSecret);
+    window.localStorage.setItem(ENCRYPTION_SECRET_KEY, secret);
+  }
+
+  return window.crypto.subtle.importKey(
+    "raw",
+    base64ToBytes(secret),
+    "AES-GCM",
+    false,
+    ["encrypt", "decrypt"],
+  );
+}
+
+async function encryptValue(value: string): Promise<EncryptedValue> {
+  const key = await getEncryptionKey();
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const encryptedBuffer = await window.crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    textEncoder.encode(value),
+  );
+
+  return {
+    iv: bytesToBase64(iv),
+    data: bytesToBase64(new Uint8Array(encryptedBuffer)),
+  };
+}
+
+async function decryptValue(payload: EncryptedValue): Promise<string> {
+  const key = await getEncryptionKey();
+  const decryptedBuffer = await window.crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: base64ToBytes(payload.iv) },
+    key,
+    base64ToBytes(payload.data),
+  );
+
+  return textDecoder.decode(decryptedBuffer);
+}
+
+function readSavedSettings() {
+  const rawValue = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawValue) as SavedApiSettings;
+  } catch {
+    return null;
+  }
+}
+
+async function saveEncryptedSettings(settings: {
+  provider: ProviderId;
+  apiKey: string;
+  selectedModel: string;
+}) {
+  if (!settings.apiKey.trim()) {
+    window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
+    return;
+  }
+
+  const encryptedApiKey = await encryptValue(settings.apiKey.trim());
+  const payload: SavedApiSettings = {
+    provider: settings.provider,
+    apiKey: encryptedApiKey,
+    selectedModel: settings.selectedModel,
+  };
+
+  window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(payload));
+}
+
 function InputPage() {
   const [textInput, setTextInput] = useState("");
   const [documents, setDocuments] = useState<File[]>([]);
@@ -696,8 +809,6 @@ function NoticePage() {
 }
 
 function SettingPage() {
-  type ProviderId = "openrouter" | "openai" | "anthropic" | "google";
-
   const providerOptions: { id: ProviderId; label: string }[] = [
     { id: "openrouter", label: "OpenRouter" },
     { id: "openai", label: "OpenAI" },
@@ -712,6 +823,58 @@ function SettingPage() {
   const [selectedModel, setSelectedModel] = useState("");
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [error, setError] = useState("");
+  const [isHydrating, setIsHydrating] = useState(true);
+  const [saveMessage, setSaveMessage] = useState(
+    "Your API key is saved locally and encrypted.",
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const hydrateSettings = async () => {
+      const savedSettings = readSavedSettings();
+
+      if (!savedSettings) {
+        if (isMounted) {
+          setIsHydrating(false);
+        }
+
+        return;
+      }
+
+      try {
+        const decryptedApiKey = await decryptValue(savedSettings.apiKey);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setSelectedProvider(savedSettings.provider);
+        setApiKey(decryptedApiKey);
+        setSelectedModel(savedSettings.selectedModel);
+        setSaveMessage("Loaded saved API key from local encrypted storage.");
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
+        setApiKey("");
+        setSelectedModel("");
+        setSaveMessage("Saved API key could not be restored.");
+      } finally {
+        if (isMounted) {
+          setIsHydrating(false);
+        }
+      }
+    };
+
+    void hydrateSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const loadModelsForProvider = useCallback(async () => {
     const key = apiKey.trim();
@@ -769,12 +932,17 @@ function SettingPage() {
   }, [apiKey, selectedProvider]);
 
   useEffect(() => {
+    if (isHydrating) {
+      return;
+    }
+
     const key = apiKey.trim();
 
     if (!key) {
       setAvailableModels([]);
       setSelectedModel("");
       setError("");
+      window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
       return;
     }
 
@@ -782,8 +950,31 @@ function SettingPage() {
       void loadModelsForProvider();
     }, 500);
 
-    return () => window.clearTimeout(timeoutId);
-  }, [apiKey, loadModelsForProvider]);
+    const persistTimeoutId = window.setTimeout(() => {
+      void saveEncryptedSettings({
+        provider: selectedProvider,
+        apiKey,
+        selectedModel,
+      })
+        .then(() => {
+          setSaveMessage("API key saved locally and encrypted.");
+        })
+        .catch(() => {
+          setSaveMessage("Could not save the API key locally.");
+        });
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearTimeout(persistTimeoutId);
+    };
+  }, [
+    apiKey,
+    isHydrating,
+    loadModelsForProvider,
+    selectedModel,
+    selectedProvider,
+  ]);
 
   return (
     <section className="h-full border border-slate-200 bg-white p-6 shadow-sm">
@@ -872,6 +1063,8 @@ function SettingPage() {
           {isLoadingModels ? (
             <p className="text-xs text-slate-500">Loading models...</p>
           ) : null}
+
+          <p className="text-xs text-slate-500">{saveMessage}</p>
 
           {error ? <p className="text-xs text-red-600">{error}</p> : null}
         </div>
