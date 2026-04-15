@@ -95,7 +95,11 @@ app.post("/api/providers/models", async (req, res) => {
     const { provider, apiKey } = (req.body ?? {});
     if (typeof provider !== "string" ||
         !validProviders.includes(provider)) {
-        res.status(400).json({ error: "provider must be one of openrouter, openai, anthropic, google" });
+        res
+            .status(400)
+            .json({
+            error: "provider must be one of openrouter, openai, anthropic, google",
+        });
         return;
     }
     if (typeof apiKey !== "string" || !apiKey.trim()) {

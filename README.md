@@ -14,6 +14,25 @@ Includes an Express backend API in TypeScript under `server/index.ts`.
 - `npm run preview` previews the production build locally.
 - `npm run lint` runs ESLint.
 - `npm run format` formats files with Prettier and Tailwind class sorting.
+- `npm run db:generate` creates SQL migrations from your Drizzle schema.
+- `npm run db:migrate` applies generated migrations to the local SQLite DB.
+- `npm run db:push` pushes schema changes directly to the local SQLite DB.
+- `npm run db:studio` opens Drizzle Studio.
+
+## Database (Drizzle ORM)
+
+- Drizzle config: `drizzle.config.ts`
+- Schema file: `server/db/schema.ts`
+- DB client: `server/db/index.ts`
+- Default DB file: `data/easy-update.db` (override with `DATABASE_URL`)
+
+Quick start:
+
+1. Set `DATABASE_URL` in `.env` (or use the default).
+2. Edit schema in `server/db/schema.ts`.
+3. Run `npm run db:generate`.
+4. Run `npm run db:migrate`.
+5. Use `npm run db:studio` to inspect/update data.
 
 ## API Endpoints
 
