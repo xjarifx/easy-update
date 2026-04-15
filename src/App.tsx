@@ -164,26 +164,73 @@ function InputPage() {
     fileInputRef.current?.click();
   };
 
-  const handleProcess = () => {
+  const handleProcess = async () => {
     const trimmedText = textInput.trim();
-    const totalFiles = documents.length + images.length;
 
-    if (!trimmedText && totalFiles === 0) {
-      setProcessStatus("Add text or files before processing.");
+    if (!trimmedText) {
+      setProcessStatus("Add text before processing.");
       return;
     }
 
-    const parts: string[] = [];
+    const savedSettings = readSavedSettings();
 
-    if (trimmedText) {
-      parts.push("text");
+    if (!savedSettings?.selectedModel) {
+      setProcessStatus(
+        "Set provider, API key, and model in Setting before processing.",
+      );
+      return;
     }
 
-    if (totalFiles > 0) {
-      parts.push(`${totalFiles} file${totalFiles === 1 ? "" : "s"}`);
+    setProcessStatus("Extracting event info and creating events...");
+
+    try {
+      const decryptedApiKey = await decryptValue(savedSettings.apiKey);
+
+      if (!decryptedApiKey.trim()) {
+        setProcessStatus("Saved API key is empty. Add API key in Setting.");
+        return;
+      }
+
+      const response = await fetch("/api/events/extract-and-create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          provider: savedSettings.provider,
+          model: savedSettings.selectedModel,
+          apiKey: decryptedApiKey,
+          inputText: trimmedText,
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        data?: { createdCount: number };
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error ?? `Request failed with status ${response.status}`,
+        );
+      }
+
+      const createdCount = payload.data?.createdCount ?? 0;
+      setProcessStatus(
+        `Created ${createdCount} event${createdCount === 1 ? "" : "s"}.`,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to process text.";
+      setProcessStatus(`Processing failed: ${message}`);
     }
 
-    setProcessStatus(`Ready to process ${parts.join(" and ")}.`);
+    if (documents.length > 0 || images.length > 0) {
+      setProcessStatus(
+        (previous) => `${previous} File extraction is not enabled yet.`,
+      );
+      return;
+    }
   };
 
   const totalDocumentBytes = documents.reduce(
