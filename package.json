@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "npm run build && npm run dev:full",
     "dev:client": "vite",
-    "dev:server": "tsx watch server/index.ts",
+    "dev:server": "tsx watch src/server/index.ts",
     "dev:full": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "start": "node dist-server/index.js",
+    "start": "npm run build && npm run start:built",
+    "start:built": "node dist-server/index.js",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -16,7 +17,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:seed": "tsx server/db/seed.ts",
+    "db:seed": "tsx src/server/db/seed.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
