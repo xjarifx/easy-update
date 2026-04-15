@@ -1,10 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Calendar from "./Calendar";
+import { apiRequest } from "./api/http";
+import { extractAndCreateEvents } from "./api/events";
+import { fetchProviderModels } from "./api/providers";
+import {
+  createNotice as createNoticeRequest,
+  deleteNotice as deleteNoticeRequest,
+  fetchNotices,
+  updateNotice as updateNoticeRequest,
+} from "./api/notices";
+import type {
+  NoticeItem,
+  NoticeMutationInput,
+  ProviderId,
+} from "./types/domain";
 import "./App.css";
 
 type Page = "input" | "notice" | "calendar" | "setting";
-
-type ProviderId = "openrouter" | "openai" | "anthropic" | "google";
 
 type EncryptedValue = {
   iv: string;
@@ -121,7 +133,6 @@ function InputPage() {
   const [textInput, setTextInput] = useState("");
   const [documents, setDocuments] = useState<File[]>([]);
   const [images, setImages] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isDropActive, setIsDropActive] = useState(false);
   const [processStatus, setProcessStatus] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -191,31 +202,14 @@ function InputPage() {
         return;
       }
 
-      const response = await fetch("/api/events/extract-and-create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          provider: savedSettings.provider,
-          model: savedSettings.selectedModel,
-          apiKey: decryptedApiKey,
-          inputText: trimmedText,
-        }),
+      const response = await extractAndCreateEvents({
+        provider: savedSettings.provider,
+        model: savedSettings.selectedModel,
+        apiKey: decryptedApiKey,
+        inputText: trimmedText,
       });
 
-      const payload = (await response.json()) as {
-        data?: { createdCount: number };
-        error?: string;
-      };
-
-      if (!response.ok) {
-        throw new Error(
-          payload.error ?? `Request failed with status ${response.status}`,
-        );
-      }
-
-      const createdCount = payload.data?.createdCount ?? 0;
+      const createdCount = response.createdCount ?? 0;
       setProcessStatus(
         `Created ${createdCount} event${createdCount === 1 ? "" : "s"}.`,
       );
@@ -239,14 +233,16 @@ function InputPage() {
   );
   const totalImageBytes = images.reduce((sum, file) => sum + file.size, 0);
 
-  useEffect(() => {
+  const imagePreviews = useMemo(() => {
     const previewUrls = images.map((image) => URL.createObjectURL(image));
-    setImagePreviews(previewUrls);
-
-    return () => {
-      previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
-    };
+    return previewUrls;
   }, [images]);
+
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
+    };
+  }, [imagePreviews]);
 
   return (
     <section className="h-full border border-slate-200 bg-white p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)]">
@@ -542,12 +538,7 @@ function getTodayLocalDate() {
   return `${year}-${month}-${day}`;
 }
 
-type NoticeItem = {
-  id: number;
-  date: string;
-  time: string;
-  event: string;
-};
+const NOTICE_AUTO_REFRESH_INTERVAL_MS = 3000;
 
 const noticeMonthByShortName: Record<string, number> = {
   JAN: 1,
@@ -675,12 +666,28 @@ function formatNoticeDate(value: string) {
   return `${parts.day.toString().padStart(2, "0")}-${month}-${parts.year}`;
 }
 
-function NoticePage() {
-  const [notices, setNotices] = useState<NoticeItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+type NoticePageProps = {
+  notices: NoticeItem[];
+  isLoading: boolean;
+  error: string;
+  onRefresh: () => Promise<void>;
+  onCreateNotice: (notice: NoticeMutationInput) => Promise<void>;
+  onUpdateNotice: (id: number, notice: NoticeMutationInput) => Promise<void>;
+  onDeleteNotice: (id: number) => Promise<void>;
+};
+
+function NoticePage({
+  notices,
+  isLoading,
+  error,
+  onRefresh,
+  onCreateNotice,
+  onUpdateNotice,
+  onDeleteNotice,
+}: NoticePageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [editingNoticeId, setEditingNoticeId] = useState<number | null>(null);
-  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [formData, setFormData] = useState({
     date: getTodayLocalDate(),
     time: "09:00",
@@ -699,34 +706,6 @@ function NoticePage() {
     return formatNoticeDate(value);
   };
 
-  const loadNotices = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError("");
-
-      const res = await fetch("/api/notices");
-      const payload = (await res.json()) as {
-        data?: NoticeItem[];
-        error?: string;
-      };
-
-      if (!res.ok) {
-        throw new Error(
-          payload.error ?? `Request failed with status ${res.status}`,
-        );
-      }
-
-      setNotices(payload.data ?? []);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load notices.";
-      setNotices([]);
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   const resetForm = () => {
     setFormData({
       date: getTodayLocalDate(),
@@ -734,58 +713,40 @@ function NoticePage() {
       event: "",
     });
     setEditingNoticeId(null);
+    setActionError("");
   };
-
-  useEffect(() => {
-    void loadNotices();
-  }, [loadNotices]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.date || !formData.time || !formData.event.trim()) {
-      setError("Date, time, and event are required.");
+      setActionError("Date, time, and event are required.");
       return;
     }
 
     try {
       setIsSaving(true);
-      setError("");
+      setActionError("");
 
-      const method = editingNoticeId === null ? "POST" : "PUT";
-      const endpoint =
-        editingNoticeId === null
-          ? "/api/notices"
-          : `/api/notices/${editingNoticeId}`;
-
-      const res = await fetch(endpoint, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      if (editingNoticeId === null) {
+        await onCreateNotice({
           date: formData.date,
           time: formData.time,
           event: formData.event.trim(),
-        }),
-      });
-
-      const payload = (await res.json()) as {
-        error?: string;
-      };
-
-      if (!res.ok) {
-        throw new Error(
-          payload.error ?? `Request failed with status ${res.status}`,
-        );
+        });
+      } else {
+        await onUpdateNotice(editingNoticeId, {
+          date: formData.date,
+          time: formData.time,
+          event: formData.event.trim(),
+        });
       }
 
       resetForm();
-      await loadNotices();
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to save notice.";
-      setError(message);
+      setActionError(message);
     } finally {
       setIsSaving(false);
     }
@@ -798,7 +759,7 @@ function NoticePage() {
       time: notice.time,
       event: notice.event,
     });
-    setError("");
+    setActionError("");
   };
 
   const handleDelete = async (notice: NoticeItem) => {
@@ -811,31 +772,16 @@ function NoticePage() {
     }
 
     try {
-      setError("");
-
-      const res = await fetch(`/api/notices/${notice.id}`, {
-        method: "DELETE",
-      });
-
-      const payload = (await res.json()) as {
-        error?: string;
-      };
-
-      if (!res.ok) {
-        throw new Error(
-          payload.error ?? `Request failed with status ${res.status}`,
-        );
-      }
+      setActionError("");
+      await onDeleteNotice(notice.id);
 
       if (editingNoticeId === notice.id) {
         resetForm();
       }
-
-      await loadNotices();
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to delete notice.";
-      setError(message);
+      setActionError(message);
     }
   };
 
@@ -917,7 +863,7 @@ function NoticePage() {
         </p>
         <button
           type="button"
-          onClick={() => void loadNotices()}
+          onClick={() => void onRefresh()}
           className="border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
         >
           Refresh
@@ -927,8 +873,13 @@ function NoticePage() {
       <div className="mt-5">
         {isLoading ? (
           <p className="text-sm text-slate-500">Loading notices...</p>
-        ) : error ? (
-          <p className="text-sm text-red-600">{error}</p>
+        ) : error || actionError ? (
+          <>
+            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {actionError ? (
+              <p className="text-sm text-red-600">{actionError}</p>
+            ) : null}
+          </>
         ) : notices.length === 0 ? (
           <p className="text-sm text-slate-500">No notices available yet.</p>
         ) : (
@@ -1056,29 +1007,9 @@ function SettingPage() {
     try {
       setIsLoadingModels(true);
 
-      const res = await fetch("/api/providers/models", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          provider: selectedProvider,
-          apiKey: key,
-        }),
-      });
+      const models = await fetchProviderModels(selectedProvider, key);
 
-      const payload = (await res.json()) as {
-        data?: string[];
-        error?: string;
-      };
-
-      if (!res.ok) {
-        throw new Error(
-          payload.error ?? `Request failed with status ${res.status}`,
-        );
-      }
-
-      const normalizedModels = (payload.data ?? [])
+      const normalizedModels = models
         .filter(Boolean)
         .sort((a, b) => a.localeCompare(b));
 
@@ -1259,6 +1190,9 @@ function App() {
   const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">(
     "checking",
   );
+  const [notices, setNotices] = useState<NoticeItem[]>([]);
+  const [isNoticesLoading, setIsNoticesLoading] = useState(true);
+  const [noticesError, setNoticesError] = useState("");
 
   const navItems: { id: Page; label: string }[] = [
     { id: "input", label: "Input" },
@@ -1267,18 +1201,70 @@ function App() {
     { id: "setting", label: "Setting" },
   ];
 
+  const loadNotices = useCallback(
+    async (options?: { background?: boolean }) => {
+      const isBackground = options?.background ?? false;
+
+      try {
+        if (!isBackground) {
+          setIsNoticesLoading(true);
+        }
+        setNoticesError("");
+
+        const noticeData = await fetchNotices();
+        setNotices(noticeData ?? []);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to load notices.";
+        setNoticesError(message);
+      } finally {
+        if (!isBackground) {
+          setIsNoticesLoading(false);
+        }
+      }
+    },
+    [],
+  );
+
+  const createNotice = useCallback(
+    async (notice: NoticeMutationInput) => {
+      await createNoticeRequest(notice);
+
+      await loadNotices();
+    },
+    [loadNotices],
+  );
+
+  const updateNotice = useCallback(
+    async (id: number, notice: NoticeMutationInput) => {
+      await updateNoticeRequest(id, notice);
+
+      await loadNotices();
+    },
+    [loadNotices],
+  );
+
+  const deleteNotice = useCallback(
+    async (id: number) => {
+      await deleteNoticeRequest(id);
+
+      await loadNotices();
+    },
+    [loadNotices],
+  );
+
   useEffect(() => {
     let isMounted = true;
 
     const checkApiHealth = async () => {
       try {
-        const res = await fetch("/api/health");
+        await apiRequest<{ status: string }>("/api/health");
 
         if (!isMounted) {
           return;
         }
 
-        setApiStatus(res.ok ? "online" : "offline");
+        setApiStatus("online");
       } catch {
         if (!isMounted) {
           return;
@@ -1294,6 +1280,31 @@ function App() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    void loadNotices();
+  }, [loadNotices]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      void loadNotices({ background: true });
+    }, NOTICE_AUTO_REFRESH_INTERVAL_MS);
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === "visible") {
+        void loadNotices({ background: true });
+      }
+    };
+
+    window.addEventListener("focus", handleVisibilityOrFocus);
+    document.addEventListener("visibilitychange", handleVisibilityOrFocus);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleVisibilityOrFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
+    };
+  }, [loadNotices]);
 
   return (
     <main className="h-screen w-screen overflow-hidden bg-slate-100">
@@ -1335,8 +1346,26 @@ function App() {
 
         <section className="min-w-0 overflow-auto p-4 md:p-6">
           {activePage === "input" && <InputPage />}
-          {activePage === "notice" && <NoticePage />}
-          {activePage === "calendar" && <Calendar />}
+          {activePage === "notice" && (
+            <NoticePage
+              notices={notices}
+              isLoading={isNoticesLoading}
+              error={noticesError}
+              onRefresh={loadNotices}
+              onCreateNotice={createNotice}
+              onUpdateNotice={updateNotice}
+              onDeleteNotice={deleteNotice}
+            />
+          )}
+          {activePage === "calendar" && (
+            <Calendar
+              notices={notices}
+              isLoading={isNoticesLoading}
+              error={noticesError}
+              onCreateNotice={createNotice}
+              onDeleteNotice={deleteNotice}
+            />
+          )}
           {activePage === "setting" && <SettingPage />}
         </section>
       </div>

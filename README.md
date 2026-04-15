@@ -4,9 +4,23 @@ Minimal React + TypeScript app built with Vite, styled with Tailwind CSS.
 
 Includes an Express backend API in TypeScript under `server/index.ts`.
 
+## System Data Flow
+
+This project is structured to enforce one-way flow from `DATA_RULE.md`:
+
+- New data into system: frontend -> API -> database
+- Data shown to user: database -> API -> frontend
+
+To enforce this at code level:
+
+- Frontend uses API client modules in `src/api/*` and never talks to DB directly.
+- API routes in `server/routes/*` orchestrate requests/responses.
+- Business logic lives in `server/services/*`.
+- Database access is isolated in `server/repositories/*`.
+
 ## Scripts
 
-- `npm run dev` starts the frontend development server.
+- `npm run dev` builds first, then runs frontend + backend together.
 - `npm run dev:server` starts the TypeScript Express API on port 4000.
 - `npm run dev:full` runs frontend and backend together.
 - `npm run build` creates a production build.
@@ -38,6 +52,11 @@ Quick start:
 ## API Endpoints
 
 - `GET /api/health` backend health check.
-- `GET /api/events` returns in-memory events.
-- `POST /api/events` creates a new in-memory event with `{ title, start }`.
+- `GET /api/notices` returns notices from PostgreSQL.
+- `POST /api/notices` creates a notice with `{ date, time, event }`.
+- `PUT /api/notices/:id` updates an existing notice.
+- `DELETE /api/notices/:id` deletes an existing notice.
+- `GET /api/events` returns calendar-shaped events derived from notices.
+- `POST /api/events` creates one event via notice creation `{ title, start }`.
+- `POST /api/events/extract-and-create` extracts events from text and persists them.
 - `POST /api/providers/models` fetches model lists from external providers using `{ provider, apiKey }`.

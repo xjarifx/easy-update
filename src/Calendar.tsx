@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import type { NoticeItem } from "./types/domain";
 
 function formatLocalDate(date: Date) {
   const year = date.getFullYear();
@@ -72,19 +73,28 @@ export interface CalendarEvent {
   id: string;
 }
 
-type NoticeItem = {
-  id: number;
-  date: string;
-  time: string;
-  event: string;
+type CalendarProps = {
+  notices: NoticeItem[];
+  isLoading: boolean;
+  error: string;
+  onCreateNotice: (notice: {
+    date: string;
+    time: string;
+    event: string;
+  }) => Promise<void>;
+  onDeleteNotice: (id: number) => Promise<void>;
 };
 
-export default function Calendar() {
+export default function Calendar({
+  notices,
+  isLoading,
+  error,
+  onCreateNotice,
+  onDeleteNotice,
+}: CalendarProps) {
   const calendarRef = useRef(null);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(getTodayLocalDate());
   const [formData, setFormData] = useState({
@@ -93,45 +103,11 @@ export default function Calendar() {
     time: "09:00",
   });
 
-  const loadEvents = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError("");
-
-      const res = await fetch("/api/notices");
-      const payload = (await res.json()) as {
-        data?: NoticeItem[];
-        error?: string;
-      };
-
-      if (!res.ok) {
-        throw new Error(
-          payload.error ?? `Request failed with status ${res.status}`,
-        );
-      }
-
-      const mappedEvents: CalendarEvent[] = (payload.data ?? []).map(
-        (notice) => ({
-          id: String(notice.id),
-          title: notice.event,
-          start: `${notice.date}T${notice.time}:00`,
-        }),
-      );
-
-      setEvents(mappedEvents);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load calendar events.";
-      setEvents([]);
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadEvents();
-  }, [loadEvents]);
+  const events: CalendarEvent[] = notices.map((notice) => ({
+    id: String(notice.id),
+    title: notice.event,
+    start: `${notice.date}T${notice.time}:00`,
+  }));
 
   const handleDateClick = (arg: { dateStr: string }) => {
     const selectedDateStr = arg.dateStr;
@@ -163,31 +139,12 @@ export default function Calendar() {
 
     try {
       setIsSaving(true);
-      setError("");
-
-      const res = await fetch("/api/notices", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          date: formData.date,
-          time: formData.time,
-          event: formData.title.trim(),
-        }),
+      setSubmitError("");
+      await onCreateNotice({
+        date: formData.date,
+        time: formData.time,
+        event: formData.title.trim(),
       });
-
-      const payload = (await res.json()) as {
-        error?: string;
-      };
-
-      if (!res.ok) {
-        throw new Error(
-          payload.error ?? `Request failed with status ${res.status}`,
-        );
-      }
-
-      await loadEvents();
       setFormData({
         title: "",
         date: getTodayLocalDate(),
@@ -197,7 +154,7 @@ export default function Calendar() {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to create event.";
-      setError(message);
+      setSubmitError(message);
     } finally {
       setIsSaving(false);
     }
@@ -211,27 +168,12 @@ export default function Calendar() {
     }
 
     try {
-      setError("");
-
-      const res = await fetch(`/api/notices/${id}`, {
-        method: "DELETE",
-      });
-
-      const payload = (await res.json()) as {
-        error?: string;
-      };
-
-      if (!res.ok) {
-        throw new Error(
-          payload.error ?? `Request failed with status ${res.status}`,
-        );
-      }
-
-      await loadEvents();
+      setSubmitError("");
+      await onDeleteNotice(Number(id));
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to delete event.";
-      setError(message);
+      setSubmitError(message);
     }
   };
 
@@ -290,6 +232,9 @@ export default function Calendar() {
               <p className="text-sm text-slate-500">Loading events...</p>
             ) : null}
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {submitError ? (
+              <p className="text-sm text-red-600">{submitError}</p>
+            ) : null}
           </div>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
             {selectedDayEvents.length === 0 ? (
