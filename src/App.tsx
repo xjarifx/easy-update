@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import Calendar, { type CalendarEvent } from "./Calendar";
+import Calendar from "./Calendar";
 import "./App.css";
 
 type Page = "input" | "notice" | "calendar" | "setting";
@@ -382,11 +382,25 @@ function getTodayLocalDate() {
   return `${year}-${month}-${day}`;
 }
 
-interface NoticePageProps {
-  events: CalendarEvent[];
-}
+type NoticeItem = {
+  id: number;
+  date: string;
+  time: string;
+  event: string;
+};
 
-function NoticePage({ events }: NoticePageProps) {
+function NoticePage() {
+  const [notices, setNotices] = useState<NoticeItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editingNoticeId, setEditingNoticeId] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({
+    date: getTodayLocalDate(),
+    time: "09:00",
+    event: "",
+  });
+
   const parseEventDate = (value: Date | string) => {
     if (value instanceof Date) {
       return value;
@@ -404,60 +418,275 @@ function NoticePage({ events }: NoticePageProps) {
     return `${day}-${month}-${year}`;
   };
 
-  const formatDisplayTime = (value: string) => {
-    const date = parseEventDate(value);
+  const loadNotices = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError("");
 
-    return date.toLocaleString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
+      const res = await fetch("/api/notices");
+      const payload = (await res.json()) as {
+        data?: NoticeItem[];
+        error?: string;
+      };
+
+      if (!res.ok) {
+        throw new Error(
+          payload.error ?? `Request failed with status ${res.status}`,
+        );
+      }
+
+      setNotices(payload.data ?? []);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load notices.";
+      setNotices([]);
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const resetForm = () => {
+    setFormData({
+      date: getTodayLocalDate(),
+      time: "09:00",
+      event: "",
     });
+    setEditingNoticeId(null);
   };
 
-  const getEventDate = (value: string) => {
-    return formatDisplayDate(value);
+  useEffect(() => {
+    void loadNotices();
+  }, [loadNotices]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.date || !formData.time || !formData.event.trim()) {
+      setError("Date, time, and event are required.");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setError("");
+
+      const method = editingNoticeId === null ? "POST" : "PUT";
+      const endpoint =
+        editingNoticeId === null
+          ? "/api/notices"
+          : `/api/notices/${editingNoticeId}`;
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: formData.date,
+          time: formData.time,
+          event: formData.event.trim(),
+        }),
+      });
+
+      const payload = (await res.json()) as {
+        error?: string;
+      };
+
+      if (!res.ok) {
+        throw new Error(
+          payload.error ?? `Request failed with status ${res.status}`,
+        );
+      }
+
+      resetForm();
+      await loadNotices();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to save notice.";
+      setError(message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const getEventTime = (value: string) => {
-    return value.includes("T") ? formatDisplayTime(value) : "12:00 AM";
+  const handleEdit = (notice: NoticeItem) => {
+    setEditingNoticeId(notice.id);
+    setFormData({
+      date: notice.date,
+      time: notice.time,
+      event: notice.event,
+    });
+    setError("");
+  };
+
+  const handleDelete = async (notice: NoticeItem) => {
+    const shouldDelete = window.confirm(
+      `Delete notice \"${notice.event}\" on ${notice.date} ${notice.time}?`,
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      setError("");
+
+      const res = await fetch(`/api/notices/${notice.id}`, {
+        method: "DELETE",
+      });
+
+      const payload = (await res.json()) as {
+        error?: string;
+      };
+
+      if (!res.ok) {
+        throw new Error(
+          payload.error ?? `Request failed with status ${res.status}`,
+        );
+      }
+
+      if (editingNoticeId === notice.id) {
+        resetForm();
+      }
+
+      await loadNotices();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete notice.";
+      setError(message);
+    }
   };
 
   return (
     <section className="h-full rounded-none border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-2xl font-semibold text-slate-900">Notice</h2>
       <p className="mt-1 text-sm text-slate-600">
-        All events are shown in ascending date and time order.
+        Create, edit, and delete notices backed by your database.
       </p>
 
+      <form
+        onSubmit={handleSubmit}
+        className="mt-5 grid gap-3 border border-slate-200 bg-slate-50 p-4 md:grid-cols-[160px_140px_minmax(0,1fr)_auto]"
+      >
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          Date
+          <input
+            type="date"
+            value={formData.date}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, date: e.target.value }))
+            }
+            className="border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500"
+          />
+        </label>
+
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          Time
+          <input
+            type="time"
+            value={formData.time}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, time: e.target.value }))
+            }
+            className="border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500"
+          />
+        </label>
+
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          Event
+          <input
+            type="text"
+            value={formData.event}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, event: e.target.value }))
+            }
+            placeholder="Enter notice event"
+            className="border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500"
+          />
+        </label>
+
+        <div className="flex items-end gap-2">
+          <button
+            type="submit"
+            className="bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-slate-300"
+            disabled={isSaving}
+          >
+            {isSaving
+              ? "Saving..."
+              : editingNoticeId === null
+                ? "Add Notice"
+                : "Update Notice"}
+          </button>
+          {editingNoticeId !== null ? (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              Cancel
+            </button>
+          ) : null}
+        </div>
+      </form>
+
+      <div className="mt-3 flex items-center justify-between">
+        <p className="text-xs text-slate-500">
+          Total notices: {notices.length}
+        </p>
+        <button
+          type="button"
+          onClick={() => void loadNotices()}
+          className="border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+        >
+          Refresh
+        </button>
+      </div>
+
       <div className="mt-5">
-        {events.length === 0 ? (
-          <p className="text-sm text-slate-500">No events available yet.</p>
+        {isLoading ? (
+          <p className="text-sm text-slate-500">Loading notices...</p>
+        ) : error ? (
+          <p className="text-sm text-red-600">{error}</p>
+        ) : notices.length === 0 ? (
+          <p className="text-sm text-slate-500">No notices available yet.</p>
         ) : (
           <div className="overflow-hidden border border-slate-200 bg-white">
-            <div className="grid grid-cols-[140px_120px_minmax(0,1fr)] border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+            <div className="grid grid-cols-[140px_120px_minmax(0,1fr)_150px] border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold tracking-wide text-slate-600 uppercase">
               <div>Date</div>
               <div>Time</div>
               <div>Event</div>
+              <div>Actions</div>
             </div>
             <div className="divide-y divide-slate-200">
-              {events
-                .slice()
-                .sort(
-                  (a, b) =>
-                    new Date(a.start).getTime() - new Date(b.start).getTime(),
-                )
-                .map((event) => (
-                  <div
-                    key={event.id}
-                    className="grid grid-cols-[140px_120px_minmax(0,1fr)] items-center px-4 py-3 text-sm text-slate-800"
-                  >
-                    <div className="font-medium text-slate-900">
-                      {getEventDate(event.start)}
-                    </div>
-                    <div>{getEventTime(event.start)}</div>
-                    <div className="truncate">{event.title}</div>
+              {notices.map((notice) => (
+                <div
+                  key={notice.id}
+                  className="grid grid-cols-[140px_120px_minmax(0,1fr)_150px] items-center px-4 py-3 text-sm text-slate-800"
+                >
+                  <div className="font-medium text-slate-900">
+                    {formatDisplayDate(notice.date)}
                   </div>
-                ))}
+                  <div>{notice.time}</div>
+                  <div className="truncate">{notice.event}</div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(notice)}
+                      className="border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(notice)}
+                      className="bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -656,13 +885,6 @@ function App() {
   const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">(
     "checking",
   );
-  const [events, setEvents] = useState<CalendarEvent[]>([
-    {
-      id: "1",
-      title: "Event 1",
-      start: `${getTodayLocalDate()}T09:00:00`,
-    },
-  ]);
 
   const navItems: { id: Page; label: string }[] = [
     { id: "input", label: "Input" },
@@ -739,10 +961,8 @@ function App() {
 
         <section className="min-w-0 overflow-auto p-4 md:p-6">
           {activePage === "input" && <InputPage />}
-          {activePage === "notice" && <NoticePage events={events} />}
-          {activePage === "calendar" && (
-            <Calendar events={events} setEvents={setEvents} />
-          )}
+          {activePage === "notice" && <NoticePage />}
+          {activePage === "calendar" && <Calendar />}
           {activePage === "setting" && <SettingPage />}
         </section>
       </div>

@@ -1,6 +1,6 @@
 import cors from "cors";
 import express from "express";
-import { desc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "./db/index.js";
 import { noticesTable } from "./db/schema.js";
 const app = express();
@@ -88,7 +88,7 @@ app.get("/api/notices", async (_req, res) => {
     const notices = await db
         .select()
         .from(noticesTable)
-        .orderBy(desc(noticesTable.date), desc(noticesTable.time), desc(noticesTable.id));
+        .orderBy(asc(noticesTable.date), asc(noticesTable.time), asc(noticesTable.id));
     res.json({ data: notices });
 });
 app.get("/api/notices/:id", async (req, res) => {

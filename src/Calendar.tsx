@@ -1,4 +1,4 @@
-import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -72,13 +72,19 @@ export interface CalendarEvent {
   id: string;
 }
 
-interface CalendarProps {
-  events: CalendarEvent[];
-  setEvents: Dispatch<SetStateAction<CalendarEvent[]>>;
-}
+type NoticeItem = {
+  id: number;
+  date: string;
+  time: string;
+  event: string;
+};
 
-export default function Calendar({ events, setEvents }: CalendarProps) {
+export default function Calendar() {
   const calendarRef = useRef(null);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(getTodayLocalDate());
   const [formData, setFormData] = useState({
@@ -86,6 +92,46 @@ export default function Calendar({ events, setEvents }: CalendarProps) {
     date: getTodayLocalDate(),
     time: "09:00",
   });
+
+  const loadEvents = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+
+      const res = await fetch("/api/notices");
+      const payload = (await res.json()) as {
+        data?: NoticeItem[];
+        error?: string;
+      };
+
+      if (!res.ok) {
+        throw new Error(
+          payload.error ?? `Request failed with status ${res.status}`,
+        );
+      }
+
+      const mappedEvents: CalendarEvent[] = (payload.data ?? []).map(
+        (notice) => ({
+          id: String(notice.id),
+          title: notice.event,
+          start: `${notice.date}T${notice.time}:00`,
+        }),
+      );
+
+      setEvents(mappedEvents);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load calendar events.";
+      setEvents([]);
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadEvents();
+  }, [loadEvents]);
 
   const handleDateClick = (arg: { dateStr: string }) => {
     const selectedDateStr = arg.dateStr;
@@ -107,7 +153,7 @@ export default function Calendar({ events, setEvents }: CalendarProps) {
     (event) => event.start.split("T")[0] === selectedDate,
   );
 
-  const handleAddEvent = (e: React.FormEvent) => {
+  const handleAddEvent = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.title.trim()) {
@@ -115,23 +161,78 @@ export default function Calendar({ events, setEvents }: CalendarProps) {
       return;
     }
 
-    const newEvent: CalendarEvent = {
-      id: Date.now().toString(),
-      title: formData.title,
-      start: `${formData.date}T${formData.time}:00`,
-    };
+    try {
+      setIsSaving(true);
+      setError("");
 
-    setEvents([...events, newEvent]);
-    setFormData({
-      title: "",
-      date: getTodayLocalDate(),
-      time: "09:00",
-    });
-    setShowModal(false);
+      const res = await fetch("/api/notices", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: formData.date,
+          time: formData.time,
+          event: formData.title.trim(),
+        }),
+      });
+
+      const payload = (await res.json()) as {
+        error?: string;
+      };
+
+      if (!res.ok) {
+        throw new Error(
+          payload.error ?? `Request failed with status ${res.status}`,
+        );
+      }
+
+      await loadEvents();
+      setFormData({
+        title: "",
+        date: getTodayLocalDate(),
+        time: "09:00",
+      });
+      setShowModal(false);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to create event.";
+      setError(message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDeleteEvent = (id: string) => {
-    setEvents(events.filter((e) => e.id !== id));
+  const handleDeleteEvent = async (id: string) => {
+    const shouldDelete = window.confirm("Delete this event?");
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      setError("");
+
+      const res = await fetch(`/api/notices/${id}`, {
+        method: "DELETE",
+      });
+
+      const payload = (await res.json()) as {
+        error?: string;
+      };
+
+      if (!res.ok) {
+        throw new Error(
+          payload.error ?? `Request failed with status ${res.status}`,
+        );
+      }
+
+      await loadEvents();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete event.";
+      setError(message);
+    }
   };
 
   const handleCreateEventClick = () => {
@@ -185,6 +286,10 @@ export default function Calendar({ events, setEvents }: CalendarProps) {
             <h2 className="text-lg font-semibold text-slate-900">
               Events for {formatDisplayDate(selectedDate)}
             </h2>
+            {isLoading ? (
+              <p className="text-sm text-slate-500">Loading events...</p>
+            ) : null}
+            {error ? <p className="text-sm text-red-600">{error}</p> : null}
           </div>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
             {selectedDayEvents.length === 0 ? (
@@ -266,9 +371,10 @@ export default function Calendar({ events, setEvents }: CalendarProps) {
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+                  className="flex-1 bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-slate-300"
+                  disabled={isSaving}
                 >
-                  Add Event
+                  {isSaving ? "Saving..." : "Add Event"}
                 </button>
                 <button
                   type="button"

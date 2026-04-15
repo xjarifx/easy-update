@@ -7,7 +7,7 @@
     "dev": "npm run dev:full",
     "dev:client": "vite",
     "dev:server": "tsx watch server/index.ts",
-    "dev:full": "concurrently -k \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:full": "node scripts/dev-full.mjs",
     "start": "node dist-server/index.js",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -16,6 +16,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
+    "db:seed": "tsx server/db/seed.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

@@ -17,6 +17,7 @@ Includes an Express backend API in TypeScript under `server/index.ts`.
 - `npm run db:generate` creates SQL migrations from your Drizzle schema.
 - `npm run db:migrate` applies generated migrations to your PostgreSQL database.
 - `npm run db:push` pushes schema changes directly to your PostgreSQL database.
+- `npm run db:seed` inserts demo notices if the notices table is empty.
 - `npm run db:studio` opens Drizzle Studio.
 
 ## Database (Drizzle ORM)
