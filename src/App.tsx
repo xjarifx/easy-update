@@ -682,7 +682,7 @@ function NoticePage() {
 
   const handleDelete = async (notice: NoticeItem) => {
     const shouldDelete = window.confirm(
-      `Delete notice \"${notice.event}\" on ${notice.date} ${notice.time}?`,
+      `Delete notice "${notice.event}" on ${notice.date} ${notice.time}?`,
     );
 
     if (!shouldDelete) {
@@ -962,7 +962,11 @@ function SettingPage() {
         .sort((a, b) => a.localeCompare(b));
 
       setAvailableModels(normalizedModels);
-      setSelectedModel(normalizedModels[0] ?? "");
+      setSelectedModel((previousModel) =>
+        normalizedModels.includes(previousModel)
+          ? previousModel
+          : (normalizedModels[0] ?? ""),
+      );
 
       if (normalizedModels.length === 0) {
         setError("No models returned for this provider and API key.");
@@ -997,6 +1001,22 @@ function SettingPage() {
       void loadModelsForProvider();
     }, 500);
 
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [apiKey, isHydrating, loadModelsForProvider]);
+
+  useEffect(() => {
+    if (isHydrating) {
+      return;
+    }
+
+    const key = apiKey.trim();
+
+    if (!key) {
+      return;
+    }
+
     const persistTimeoutId = window.setTimeout(() => {
       void saveEncryptedSettings({
         provider: selectedProvider,
@@ -1012,16 +1032,9 @@ function SettingPage() {
     }, 300);
 
     return () => {
-      window.clearTimeout(timeoutId);
       window.clearTimeout(persistTimeoutId);
     };
-  }, [
-    apiKey,
-    isHydrating,
-    loadModelsForProvider,
-    selectedModel,
-    selectedProvider,
-  ]);
+  }, [apiKey, isHydrating, selectedModel, selectedProvider]);
 
   return (
     <section className="h-full border border-slate-200 bg-white p-6 shadow-sm">
