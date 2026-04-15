@@ -1,10 +1,10 @@
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-const databaseUrl = process.env.DATABASE_URL ?? "./data/easy-update.db";
-if (databaseUrl !== ":memory:") {
-    mkdirSync(dirname(databaseUrl), { recursive: true });
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required for PostgreSQL connection");
 }
-const sqlite = new Database(databaseUrl);
-export const db = drizzle(sqlite);
+const pool = new Pool({
+    connectionString: databaseUrl,
+});
+export const db = drizzle(pool);

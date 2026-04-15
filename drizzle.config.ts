@@ -1,12 +1,13 @@
+/// <reference types="node" />
 import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
   out: "./drizzle",
   schema: "./server/db/schema.ts",
-  dialect: "sqlite",
+  dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "./data/easy-update.db",
+    url: process.env.DATABASE_URL ?? "",
   },
   verbose: true,
   strict: true,

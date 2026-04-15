@@ -139,21 +139,20 @@ app.get("/api/events", (_req, res) => {
   res.json({ data: events });
 });
 
-app.get("/api/notices", (_req, res) => {
-  const notices = db
+app.get("/api/notices", async (_req, res) => {
+  const notices = await db
     .select()
     .from(noticesTable)
     .orderBy(
       desc(noticesTable.date),
       desc(noticesTable.time),
       desc(noticesTable.id),
-    )
-    .all() as NoticeRecord[];
+    );
 
-  res.json({ data: notices });
+  res.json({ data: notices as NoticeRecord[] });
 });
 
-app.get("/api/notices/:id", (req, res) => {
+app.get("/api/notices/:id", async (req, res) => {
   const noticeId = parseNoticeId(req.params.id);
 
   if (noticeId === null) {
@@ -161,21 +160,21 @@ app.get("/api/notices/:id", (req, res) => {
     return;
   }
 
-  const notice = db
+  const [notice] = await db
     .select()
     .from(noticesTable)
     .where(eq(noticesTable.id, noticeId))
-    .get() as NoticeRecord | undefined;
+    .limit(1);
 
   if (!notice) {
     res.status(404).json({ error: "Notice not found" });
     return;
   }
 
-  res.json({ data: notice });
+  res.json({ data: notice as NoticeRecord });
 });
 
-app.post("/api/notices", (req, res) => {
+app.post("/api/notices", async (req, res) => {
   const { date, time, event } = (req.body ?? {}) as {
     date?: unknown;
     time?: unknown;
@@ -197,25 +196,19 @@ app.post("/api/notices", (req, res) => {
     return;
   }
 
-  const result = db
+  const [notice] = await db
     .insert(noticesTable)
     .values({
       date: date.trim(),
       time: time.trim(),
       event: event.trim(),
     })
-    .run();
-
-  const notice = db
-    .select()
-    .from(noticesTable)
-    .where(eq(noticesTable.id, Number(result.lastInsertRowid)))
-    .get() as NoticeRecord | undefined;
+    .returning();
 
   res.status(201).json({ data: notice });
 });
 
-app.put("/api/notices/:id", (req, res) => {
+app.put("/api/notices/:id", async (req, res) => {
   const noticeId = parseNoticeId(req.params.id);
 
   if (noticeId === null) {
@@ -244,36 +237,31 @@ app.put("/api/notices/:id", (req, res) => {
     return;
   }
 
-  const existingNotice = db
+  const [existingNotice] = await db
     .select()
     .from(noticesTable)
     .where(eq(noticesTable.id, noticeId))
-    .get() as NoticeRecord | undefined;
+    .limit(1);
 
   if (!existingNotice) {
     res.status(404).json({ error: "Notice not found" });
     return;
   }
 
-  db.update(noticesTable)
+  const [updatedNotice] = await db
+    .update(noticesTable)
     .set({
       date: date.trim(),
       time: time.trim(),
       event: event.trim(),
     })
     .where(eq(noticesTable.id, noticeId))
-    .run();
+    .returning();
 
-  const notice = db
-    .select()
-    .from(noticesTable)
-    .where(eq(noticesTable.id, noticeId))
-    .get() as NoticeRecord | undefined;
-
-  res.json({ data: notice ?? existingNotice });
+  res.json({ data: (updatedNotice ?? existingNotice) as NoticeRecord });
 });
 
-app.delete("/api/notices/:id", (req, res) => {
+app.delete("/api/notices/:id", async (req, res) => {
   const noticeId = parseNoticeId(req.params.id);
 
   if (noticeId === null) {
@@ -281,20 +269,20 @@ app.delete("/api/notices/:id", (req, res) => {
     return;
   }
 
-  const notice = db
+  const [notice] = await db
     .select()
     .from(noticesTable)
     .where(eq(noticesTable.id, noticeId))
-    .get() as NoticeRecord | undefined;
+    .limit(1);
 
   if (!notice) {
     res.status(404).json({ error: "Notice not found" });
     return;
   }
 
-  db.delete(noticesTable).where(eq(noticesTable.id, noticeId)).run();
+  await db.delete(noticesTable).where(eq(noticesTable.id, noticeId));
 
-  res.json({ data: notice });
+  res.json({ data: notice as NoticeRecord });
 });
 
 app.post("/api/events", (req, res) => {

@@ -1,12 +1,12 @@
-export declare const eventsTable: import("drizzle-orm/sqlite-core").SQLiteTableWithColumns<{
+export declare const eventsTable: import("drizzle-orm/pg-core").PgTableWithColumns<{
     name: "events";
     schema: undefined;
     columns: {
-        id: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+        id: import("drizzle-orm/pg-core").PgColumn<{
             name: "id";
             tableName: "events";
             dataType: "number";
-            columnType: "SQLiteInteger";
+            columnType: "PgSerial";
             data: number;
             driverParam: number;
             notNull: true;
@@ -19,11 +19,11 @@ export declare const eventsTable: import("drizzle-orm/sqlite-core").SQLiteTableW
             identity: undefined;
             generated: undefined;
         }, {}, {}>;
-        title: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+        title: import("drizzle-orm/pg-core").PgColumn<{
             name: "title";
             tableName: "events";
             dataType: "string";
-            columnType: "SQLiteText";
+            columnType: "PgText";
             data: string;
             driverParam: string;
             notNull: true;
@@ -35,14 +35,12 @@ export declare const eventsTable: import("drizzle-orm/sqlite-core").SQLiteTableW
             baseColumn: never;
             identity: undefined;
             generated: undefined;
-        }, {}, {
-            length: number | undefined;
-        }>;
-        start: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+        }, {}, {}>;
+        start: import("drizzle-orm/pg-core").PgColumn<{
             name: "start";
             tableName: "events";
             dataType: "string";
-            columnType: "SQLiteText";
+            columnType: "PgText";
             data: string;
             driverParam: string;
             notNull: true;
@@ -54,9 +52,82 @@ export declare const eventsTable: import("drizzle-orm/sqlite-core").SQLiteTableW
             baseColumn: never;
             identity: undefined;
             generated: undefined;
-        }, {}, {
-            length: number | undefined;
-        }>;
+        }, {}, {}>;
     };
-    dialect: "sqlite";
+    dialect: "pg";
+}>;
+export declare const noticesTable: import("drizzle-orm/pg-core").PgTableWithColumns<{
+    name: "notices";
+    schema: undefined;
+    columns: {
+        id: import("drizzle-orm/pg-core").PgColumn<{
+            name: "id";
+            tableName: "notices";
+            dataType: "number";
+            columnType: "PgSerial";
+            data: number;
+            driverParam: number;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: true;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        date: import("drizzle-orm/pg-core").PgColumn<{
+            name: "date";
+            tableName: "notices";
+            dataType: "string";
+            columnType: "PgText";
+            data: string;
+            driverParam: string;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        time: import("drizzle-orm/pg-core").PgColumn<{
+            name: "time";
+            tableName: "notices";
+            dataType: "string";
+            columnType: "PgText";
+            data: string;
+            driverParam: string;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        event: import("drizzle-orm/pg-core").PgColumn<{
+            name: "event";
+            tableName: "notices";
+            dataType: "string";
+            columnType: "PgText";
+            data: string;
+            driverParam: string;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+    };
+    dialect: "pg";
 }>;

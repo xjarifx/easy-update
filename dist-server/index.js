@@ -1,5 +1,8 @@
 import cors from "cors";
 import express from "express";
+import { desc, eq } from "drizzle-orm";
+import { db } from "./db/index.js";
+import { noticesTable } from "./db/schema.js";
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
 app.use(cors());
@@ -19,6 +22,10 @@ const validProviders = [
 ];
 const normalizeModels = (models) => {
     return models.filter(Boolean).sort((a, b) => a.localeCompare(b));
+};
+const parseNoticeId = (value) => {
+    const id = Number.parseInt(value, 10);
+    return Number.isInteger(id) && id > 0 ? id : null;
 };
 const fetchModelsForProvider = async (provider, apiKey, requestOrigin) => {
     if (provider === "openrouter") {
@@ -77,6 +84,111 @@ app.get("/api/health", (_req, res) => {
 app.get("/api/events", (_req, res) => {
     res.json({ data: events });
 });
+app.get("/api/notices", async (_req, res) => {
+    const notices = await db
+        .select()
+        .from(noticesTable)
+        .orderBy(desc(noticesTable.date), desc(noticesTable.time), desc(noticesTable.id));
+    res.json({ data: notices });
+});
+app.get("/api/notices/:id", async (req, res) => {
+    const noticeId = parseNoticeId(req.params.id);
+    if (noticeId === null) {
+        res.status(400).json({ error: "id must be a positive integer" });
+        return;
+    }
+    const [notice] = await db
+        .select()
+        .from(noticesTable)
+        .where(eq(noticesTable.id, noticeId))
+        .limit(1);
+    if (!notice) {
+        res.status(404).json({ error: "Notice not found" });
+        return;
+    }
+    res.json({ data: notice });
+});
+app.post("/api/notices", async (req, res) => {
+    const { date, time, event } = (req.body ?? {});
+    if (typeof date !== "string" || !date.trim()) {
+        res.status(400).json({ error: "date is required" });
+        return;
+    }
+    if (typeof time !== "string" || !time.trim()) {
+        res.status(400).json({ error: "time is required" });
+        return;
+    }
+    if (typeof event !== "string" || !event.trim()) {
+        res.status(400).json({ error: "event is required" });
+        return;
+    }
+    const [notice] = await db
+        .insert(noticesTable)
+        .values({
+        date: date.trim(),
+        time: time.trim(),
+        event: event.trim(),
+    })
+        .returning();
+    res.status(201).json({ data: notice });
+});
+app.put("/api/notices/:id", async (req, res) => {
+    const noticeId = parseNoticeId(req.params.id);
+    if (noticeId === null) {
+        res.status(400).json({ error: "id must be a positive integer" });
+        return;
+    }
+    const { date, time, event } = (req.body ?? {});
+    if (typeof date !== "string" || !date.trim()) {
+        res.status(400).json({ error: "date is required" });
+        return;
+    }
+    if (typeof time !== "string" || !time.trim()) {
+        res.status(400).json({ error: "time is required" });
+        return;
+    }
+    if (typeof event !== "string" || !event.trim()) {
+        res.status(400).json({ error: "event is required" });
+        return;
+    }
+    const [existingNotice] = await db
+        .select()
+        .from(noticesTable)
+        .where(eq(noticesTable.id, noticeId))
+        .limit(1);
+    if (!existingNotice) {
+        res.status(404).json({ error: "Notice not found" });
+        return;
+    }
+    const [updatedNotice] = await db
+        .update(noticesTable)
+        .set({
+        date: date.trim(),
+        time: time.trim(),
+        event: event.trim(),
+    })
+        .where(eq(noticesTable.id, noticeId))
+        .returning();
+    res.json({ data: (updatedNotice ?? existingNotice) });
+});
+app.delete("/api/notices/:id", async (req, res) => {
+    const noticeId = parseNoticeId(req.params.id);
+    if (noticeId === null) {
+        res.status(400).json({ error: "id must be a positive integer" });
+        return;
+    }
+    const [notice] = await db
+        .select()
+        .from(noticesTable)
+        .where(eq(noticesTable.id, noticeId))
+        .limit(1);
+    if (!notice) {
+        res.status(404).json({ error: "Notice not found" });
+        return;
+    }
+    await db.delete(noticesTable).where(eq(noticesTable.id, noticeId));
+    res.json({ data: notice });
+});
 app.post("/api/events", (req, res) => {
     const { title, start } = (req.body ?? {});
     if (typeof title !== "string" || typeof start !== "string") {
@@ -95,9 +207,7 @@ app.post("/api/providers/models", async (req, res) => {
     const { provider, apiKey } = (req.body ?? {});
     if (typeof provider !== "string" ||
         !validProviders.includes(provider)) {
-        res
-            .status(400)
-            .json({
+        res.status(400).json({
             error: "provider must be one of openrouter, openai, anthropic, google",
         });
         return;
