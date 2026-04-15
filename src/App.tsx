@@ -1,37 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Calendar, { type CalendarEvent } from "./Calendar";
 import "./App.css";
 
 type Page = "input" | "notice" | "calendar" | "setting";
 
-type InputTab = "text" | "documents" | "images";
-
 function InputPage() {
-  const [activeTab, setActiveTab] = useState<InputTab>("text");
   const [textInput, setTextInput] = useState("");
   const [documents, setDocuments] = useState<File[]>([]);
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [isDocumentDropActive, setIsDocumentDropActive] = useState(false);
-  const [isImageDropActive, setIsImageDropActive] = useState(false);
-
-  const inputTabs: { id: InputTab; label: string; description: string }[] = [
-    {
-      id: "text",
-      label: "Text",
-      description: "Paste long notes, transcripts, or draft content.",
-    },
-    {
-      id: "documents",
-      label: "Documents",
-      description: "Upload PDFs, DOCX, TXT, or markdown files.",
-    },
-    {
-      id: "images",
-      label: "Images",
-      description: "Attach screenshots, photos, or reference images.",
-    },
-  ];
+  const [isDropActive, setIsDropActive] = useState(false);
+  const [processStatus, setProcessStatus] = useState("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const formatFileSize = (size: number) => {
     if (size < 1024) {
@@ -45,8 +25,9 @@ function InputPage() {
     return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const handleDocumentUpload = (files: FileList | null) => {
-    const nextDocuments = Array.from(files ?? []).filter((file) => {
+  const handleFileUpload = (files: FileList | null) => {
+    const selectedFiles = Array.from(files ?? []);
+    const nextDocuments = selectedFiles.filter((file) => {
       const name = file.name.toLowerCase();
       return (
         file.type.startsWith("text/") ||
@@ -58,16 +39,38 @@ function InputPage() {
         name.endsWith(".rtf")
       );
     });
-
-    setDocuments((prev) => [...prev, ...nextDocuments]);
-  };
-
-  const handleImageUpload = (files: FileList | null) => {
-    const nextImages = Array.from(files ?? []).filter((file) =>
+    const nextImages = selectedFiles.filter((file) =>
       file.type.startsWith("image/"),
     );
 
+    setDocuments((prev) => [...prev, ...nextDocuments]);
     setImages((prev) => [...prev, ...nextImages]);
+  };
+
+  const handleBrowseFiles = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleProcess = () => {
+    const trimmedText = textInput.trim();
+    const totalFiles = documents.length + images.length;
+
+    if (!trimmedText && totalFiles === 0) {
+      setProcessStatus("Add text or files before processing.");
+      return;
+    }
+
+    const parts: string[] = [];
+
+    if (trimmedText) {
+      parts.push("text");
+    }
+
+    if (totalFiles > 0) {
+      parts.push(`${totalFiles} file${totalFiles === 1 ? "" : "s"}`);
+    }
+
+    setProcessStatus(`Ready to process ${parts.join(" and ")}.`);
   };
 
   const totalDocumentBytes = documents.reduce(
@@ -86,336 +89,285 @@ function InputPage() {
   }, [images]);
 
   return (
-    <section className="h-full rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-2xl font-semibold text-slate-900">Input</h2>
-      <p className="mt-1 text-sm text-slate-600">
-        Capture large text, documents, and images in one workspace.
-      </p>
+    <section className="h-full border border-slate-200 bg-white p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)]">
+      <div className="max-w-4xl">
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+          Input
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Paste text, drop files, and process everything from one clean panel.
+        </p>
+      </div>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div className="grid grid-cols-3 gap-2 rounded-xl bg-white p-1 shadow-sm">
-            {inputTabs.map((tab) => (
+      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="space-y-4">
+          <label className="grid gap-2 text-sm font-medium text-slate-700">
+            <span>Large input box</span>
+            <textarea
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder="Paste notes, a prompt, transcript text, or draft content here."
+              rows={14}
+              className="min-h-72 w-full resize-y border border-slate-200 bg-slate-50 px-4 py-4 text-slate-900 shadow-inner transition outline-none placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-100"
+            />
+          </label>
+
+          <div
+            className={`grid gap-4 border border-dashed p-4 transition ${
+              isDropActive
+                ? "border-slate-400 bg-slate-50"
+                : "border-slate-200 bg-white"
+            }`}
+            onDragEnter={() => setIsDropActive(true)}
+            onDragLeave={() => setIsDropActive(false)}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDropActive(true);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDropActive(false);
+              handleFileUpload(e.dataTransfer.files);
+            }}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.txt,.md,.rtf,image/*"
+              className="hidden"
+              onChange={(e) => handleFileUpload(e.target.files)}
+            />
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  Attach documents or images
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Drop files here or browse for PDFs, DOC/DOCX, TXT, MD, RTF,
+                  and images.
+                </p>
+              </div>
+
               <button
-                key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
-                  activeTab === tab.id
-                    ? "bg-blue-600 text-white"
-                    : "bg-transparent text-slate-700 hover:bg-slate-100"
-                }`}
+                onClick={handleBrowseFiles}
+                className="inline-flex items-center justify-center bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
               >
-                <span className="block">{tab.label}</span>
-                <span
-                  className={`block text-xs ${
-                    activeTab === tab.id ? "text-blue-100" : "text-slate-500"
-                  }`}
-                >
-                  {tab.description}
-                </span>
+                Add files
               </button>
-            ))}
-          </div>
+            </div>
 
-          <div className="mt-4">
-            {activeTab === "text" && (
-              <div className="grid gap-3">
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                  <p>
-                    Optimized for large pasted content and long-form drafts.
+            <div className="grid gap-3 text-sm text-slate-700 sm:grid-cols-3">
+              <div className="bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  Text
+                </p>
+                <p className="mt-1 font-medium text-slate-900">
+                  {textInput.trim()
+                    ? `${textInput.length.toLocaleString()} chars`
+                    : "No text yet"}
+                </p>
+              </div>
+              <div className="bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  Documents
+                </p>
+                <p className="mt-1 font-medium text-slate-900">
+                  {documents.length} file{documents.length === 1 ? "" : "s"}
+                </p>
+              </div>
+              <div className="bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  Images
+                </p>
+                <p className="mt-1 font-medium text-slate-900">
+                  {images.length} file{images.length === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-slate-900">
+                    Documents
                   </p>
                   <button
                     type="button"
-                    onClick={() => setTextInput("")}
-                    className="shrink-0 px-3 py-1 font-medium text-red-600 hover:bg-red-50"
+                    onClick={() => setDocuments([])}
+                    className="text-xs font-medium text-slate-500 transition hover:text-red-600"
                   >
-                    Clear text
+                    Clear
                   </button>
                 </div>
-
-                <label className="grid gap-1 text-sm font-medium text-slate-700">
-                  Large Text Input
-                  <textarea
-                    value={textInput}
-                    onChange={(e) => setTextInput(e.target.value)}
-                    placeholder="Paste long-form notes, meeting transcripts, instructions, or draft content here..."
-                    rows={14}
-                    className="min-h-80 border border-slate-300 bg-white px-3 py-3 text-slate-900 ring-blue-500 outline-none focus:ring-2"
-                  />
-                </label>
-
-                <div className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 sm:grid-cols-3">
-                  <div>
-                    <p className="text-xs tracking-wide text-slate-500 uppercase">
-                      Characters
+                <p className="mt-1 text-xs text-slate-500">
+                  Total size {formatFileSize(totalDocumentBytes)}
+                </p>
+                <div className="mt-3 space-y-2">
+                  {documents.length === 0 ? (
+                    <p className="text-sm text-slate-500">
+                      No documents added yet.
                     </p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">
-                      {textInput.length.toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs tracking-wide text-slate-500 uppercase">
-                      Words
-                    </p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">
-                      {textInput.trim()
-                        ? textInput.trim().split(/\s+/).length
-                        : 0}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs tracking-wide text-slate-500 uppercase">
-                      Best for
-                    </p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">
-                      Long notes
-                    </p>
-                  </div>
+                  ) : (
+                    documents.map((file, index) => (
+                      <div
+                        key={`${file.name}-${file.lastModified}-${index}`}
+                        className="flex items-center justify-between gap-3 border border-white/70 bg-white px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-slate-900">
+                            {file.name}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {formatFileSize(file.size)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDocuments((prev) =>
+                              prev.filter(
+                                (_, currentIndex) => currentIndex !== index,
+                              ),
+                            )
+                          }
+                          className="shrink-0 text-xs font-medium text-slate-500 transition hover:text-red-600"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-            )}
 
-            {activeTab === "documents" && (
-              <div className="grid gap-4">
-                <label
-                  className={`grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed bg-white p-6 text-sm text-slate-600 transition hover:border-blue-400 hover:bg-blue-50/40 ${
-                    isDocumentDropActive
-                      ? "border-blue-500 bg-blue-50/60"
-                      : "border-slate-300"
-                  }`}
-                  onDragEnter={() => setIsDocumentDropActive(true)}
-                  onDragLeave={() => setIsDocumentDropActive(false)}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDocumentDropActive(true);
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setIsDocumentDropActive(false);
-                    handleDocumentUpload(e.dataTransfer.files);
-                  }}
-                >
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      Drop or select documents
+              <div className="border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-slate-900">Images</p>
+                  <button
+                    type="button"
+                    onClick={() => setImages([])}
+                    className="text-xs font-medium text-slate-500 transition hover:text-red-600"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  Total size {formatFileSize(totalImageBytes)}
+                </p>
+                <div className="mt-3 space-y-3">
+                  {images.length === 0 ? (
+                    <p className="text-sm text-slate-500">
+                      No images added yet.
                     </p>
-                    <p className="mt-1">
-                      Supports PDF, DOC, DOCX, TXT, MD, and RTF files. Add many
-                      files at once.
-                    </p>
-                  </div>
-                  <input
-                    type="file"
-                    multiple
-                    accept=".pdf,.doc,.docx,.txt,.md,.rtf,text/*,application/pdf"
-                    className="hidden"
-                    onChange={(e) => handleDocumentUpload(e.target.files)}
-                  />
-                </label>
-
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-slate-900">
-                      Uploaded documents
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {documents.length} file{documents.length === 1 ? "" : "s"}
-                    </p>
-                  </div>
-
-                  <div className="mt-2 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                    <p>Total size: {formatFileSize(totalDocumentBytes)}</p>
-                    <button
-                      type="button"
-                      onClick={() => setDocuments([])}
-                      className="px-2 py-1 font-medium text-red-600 hover:bg-red-50"
-                    >
-                      Clear all
-                    </button>
-                  </div>
-
-                  <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
-                    {documents.length === 0 ? (
-                      <p className="text-sm text-slate-500">
-                        No documents uploaded yet.
-                      </p>
-                    ) : (
-                      documents.map((file, index) => (
-                        <div
-                          key={`${file.name}-${file.lastModified}-${index}`}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-                        >
+                  ) : (
+                    images.map((image, index) => (
+                      <div
+                        key={`${image.name}-${image.lastModified}-${index}`}
+                        className="overflow-hidden border border-white/70 bg-white"
+                      >
+                        <img
+                          src={imagePreviews[index]}
+                          alt={image.name}
+                          className="h-32 w-full object-cover"
+                        />
+                        <div className="flex items-center justify-between gap-3 px-3 py-2">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-slate-900">
-                              {file.name}
+                              {image.name}
                             </p>
                             <p className="text-xs text-slate-500">
-                              {formatFileSize(file.size)}
+                              {formatFileSize(image.size)}
                             </p>
                           </div>
                           <button
                             type="button"
                             onClick={() =>
-                              setDocuments((prev) =>
+                              setImages((prev) =>
                                 prev.filter(
                                   (_, currentIndex) => currentIndex !== index,
                                 ),
                               )
                             }
-                            className="shrink-0 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                            className="shrink-0 text-xs font-medium text-slate-500 transition hover:text-red-600"
                           >
                             Remove
                           </button>
                         </div>
-                      ))
-                    )}
-                  </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-            )}
+            </div>
 
-            {activeTab === "images" && (
-              <div className="grid gap-4">
-                <label
-                  className={`grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed bg-white p-6 text-sm text-slate-600 transition hover:border-blue-400 hover:bg-blue-50/40 ${
-                    isImageDropActive
-                      ? "border-blue-500 bg-blue-50/60"
-                      : "border-slate-300"
-                  }`}
-                  onDragEnter={() => setIsImageDropActive(true)}
-                  onDragLeave={() => setIsImageDropActive(false)}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsImageDropActive(true);
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setIsImageDropActive(false);
-                    handleImageUpload(e.dataTransfer.files);
-                  }}
-                >
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      Drop or select images
-                    </p>
-                    <p className="mt-1">
-                      Supports PNG, JPG, JPEG, WEBP, and GIF files. Add multiple
-                      images for reference.
-                    </p>
-                  </div>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e.target.files)}
-                  />
-                </label>
+            <div className="flex flex-col gap-3 border-t border-slate-200 pt-1 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  setTextInput("");
+                  setDocuments([]);
+                  setImages([]);
+                  setProcessStatus("");
+                }}
+                className="text-sm font-medium text-slate-500 transition hover:text-slate-900"
+              >
+                Clear all
+              </button>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-slate-900">
-                      Image preview
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {images.length} image{images.length === 1 ? "" : "s"}
-                    </p>
-                  </div>
+              <button
+                type="button"
+                onClick={handleProcess}
+                className="inline-flex items-center justify-center bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                disabled={
+                  !textInput.trim() &&
+                  documents.length === 0 &&
+                  images.length === 0
+                }
+              >
+                Process
+              </button>
+            </div>
 
-                  <div className="mt-2 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                    <p>Total size: {formatFileSize(totalImageBytes)}</p>
-                    <button
-                      type="button"
-                      onClick={() => setImages([])}
-                      className="px-2 py-1 font-medium text-red-600 hover:bg-red-50"
-                    >
-                      Clear all
-                    </button>
-                  </div>
-
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    {images.length === 0 ? (
-                      <p className="text-sm text-slate-500">
-                        No images uploaded yet.
-                      </p>
-                    ) : (
-                      images.map((image, index) => (
-                        <div
-                          key={`${image.name}-${image.lastModified}-${index}`}
-                          className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
-                        >
-                          <img
-                            src={imagePreviews[index]}
-                            alt={image.name}
-                            className="h-40 w-full object-cover"
-                          />
-                          <div className="flex items-center justify-between gap-3 p-3">
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium text-slate-900">
-                                {image.name}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                {formatFileSize(image.size)}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setImages((prev) =>
-                                  prev.filter(
-                                    (_, currentIndex) => currentIndex !== index,
-                                  ),
-                                )
-                              }
-                              className="shrink-0 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            {processStatus ? (
+              <p className="text-sm text-slate-600">{processStatus}</p>
+            ) : null}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-slate-900">Input Summary</p>
-          <div className="mt-4 space-y-4 text-sm text-slate-700">
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-xs tracking-wide text-slate-500 uppercase">
-                Text
+        <aside className="border border-slate-200 bg-slate-50 p-4">
+          <p className="text-sm font-semibold text-slate-900">Summary</p>
+          <div className="mt-4 space-y-3 text-sm text-slate-700">
+            <div className="bg-white px-4 py-3">
+              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                Characters
               </p>
-              <p className="mt-1 font-medium text-slate-900">
-                {textInput.trim()
-                  ? "Ready for processing"
-                  : "No text added yet"}
+              <p className="mt-1 text-base font-medium text-slate-900">
+                {textInput.length.toLocaleString()}
               </p>
             </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-xs tracking-wide text-slate-500 uppercase">
-                Documents
+            <div className="bg-white px-4 py-3">
+              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                Files
               </p>
-              <p className="mt-1 font-medium text-slate-900">
-                {documents.length} uploaded
+              <p className="mt-1 text-base font-medium text-slate-900">
+                {documents.length + images.length}
               </p>
             </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-xs tracking-wide text-slate-500 uppercase">
-                Images
+            <div className="bg-white px-4 py-3">
+              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                Ready
               </p>
-              <p className="mt-1 font-medium text-slate-900">
-                {images.length} uploaded
+              <p className="mt-1 text-base font-medium text-slate-900">
+                {textInput.trim() || documents.length > 0 || images.length > 0
+                  ? "Yes"
+                  : "Not yet"}
               </p>
             </div>
           </div>
-        </div>
+        </aside>
       </div>
     </section>
   );
