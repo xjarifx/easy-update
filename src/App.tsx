@@ -1,50 +1,344 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Calendar, { type CalendarEvent } from "./Calendar";
 import "./App.css";
 
 type Page = "input" | "notice" | "calendar" | "setting";
 
+type InputTab = "text" | "documents" | "images";
+
 function InputPage() {
-  const [title, setTitle] = useState("");
-  const [details, setDetails] = useState("");
+  const [activeTab, setActiveTab] = useState<InputTab>("text");
+  const [textInput, setTextInput] = useState("");
+  const [documents, setDocuments] = useState<File[]>([]);
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+  const inputTabs: { id: InputTab; label: string; description: string }[] = [
+    {
+      id: "text",
+      label: "Text",
+      description: "Paste long notes, transcripts, or draft content.",
+    },
+    {
+      id: "documents",
+      label: "Documents",
+      description: "Upload PDFs, DOCX, TXT, or markdown files.",
+    },
+    {
+      id: "images",
+      label: "Images",
+      description: "Attach screenshots, photos, or reference images.",
+    },
+  ];
+
+  const formatFileSize = (size: number) => {
+    if (size < 1024) {
+      return `${size} B`;
+    }
+
+    if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleDocumentUpload = (files: FileList | null) => {
+    const nextDocuments = Array.from(files ?? []).filter((file) => {
+      const name = file.name.toLowerCase();
+      return (
+        file.type.startsWith("text/") ||
+        file.type === "application/pdf" ||
+        name.endsWith(".doc") ||
+        name.endsWith(".docx") ||
+        name.endsWith(".txt") ||
+        name.endsWith(".md") ||
+        name.endsWith(".rtf")
+      );
+    });
+
+    setDocuments((prev) => [...prev, ...nextDocuments]);
+  };
+
+  const handleImageUpload = (files: FileList | null) => {
+    const nextImages = Array.from(files ?? []).filter((file) =>
+      file.type.startsWith("image/"),
+    );
+
+    setImages((prev) => [...prev, ...nextImages]);
+  };
+
+  useEffect(() => {
+    const previewUrls = images.map((image) => URL.createObjectURL(image));
+    setImagePreviews(previewUrls);
+
+    return () => {
+      previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
+    };
+  }, [images]);
 
   return (
     <section className="h-full rounded-none border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-2xl font-semibold text-slate-900">Input</h2>
       <p className="mt-1 text-sm text-slate-600">
-        Capture quick information for your workflow.
+        Capture large text, documents, and images in one workspace.
       </p>
 
-      <div className="mt-5 grid gap-4">
-        <label className="grid gap-1 text-sm font-medium text-slate-700">
-          Title
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter title"
-            className="border border-slate-300 px-3 py-2 text-slate-900 ring-blue-500 outline-none focus:ring-2"
-          />
-        </label>
+      <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="grid grid-cols-3 gap-2 rounded-xl bg-white p-1 shadow-sm">
+            {inputTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                  activeTab === tab.id
+                    ? "bg-blue-600 text-white"
+                    : "bg-transparent text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                <span className="block">{tab.label}</span>
+                <span
+                  className={`block text-xs ${
+                    activeTab === tab.id ? "text-blue-100" : "text-slate-500"
+                  }`}
+                >
+                  {tab.description}
+                </span>
+              </button>
+            ))}
+          </div>
 
-        <label className="grid gap-1 text-sm font-medium text-slate-700">
-          Details
-          <textarea
-            value={details}
-            onChange={(e) => setDetails(e.target.value)}
-            placeholder="Add details"
-            rows={5}
-            className="border border-slate-300 px-3 py-2 text-slate-900 ring-blue-500 outline-none focus:ring-2"
-          />
-        </label>
-      </div>
+          <div className="mt-4">
+            {activeTab === "text" && (
+              <div className="grid gap-3">
+                <label className="grid gap-1 text-sm font-medium text-slate-700">
+                  Large Text Input
+                  <textarea
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    placeholder="Paste long-form notes, meeting transcripts, instructions, or draft content here..."
+                    rows={14}
+                    className="min-h-80 border border-slate-300 bg-white px-3 py-3 text-slate-900 ring-blue-500 outline-none focus:ring-2"
+                  />
+                </label>
 
-      <div className="mt-5 border border-slate-200 bg-slate-50 p-4">
-        <p className="text-sm font-semibold text-slate-700">Preview</p>
-        <p className="mt-2 text-sm text-slate-900">{title || "No title yet"}</p>
-        <p className="mt-1 text-sm text-slate-600">
-          {details || "No details yet"}
-        </p>
+                <div className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 sm:grid-cols-3">
+                  <div>
+                    <p className="text-xs tracking-wide text-slate-500 uppercase">
+                      Characters
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">
+                      {textInput.length.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs tracking-wide text-slate-500 uppercase">
+                      Words
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">
+                      {textInput.trim()
+                        ? textInput.trim().split(/\s+/).length
+                        : 0}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs tracking-wide text-slate-500 uppercase">
+                      Best for
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">
+                      Long notes
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "documents" && (
+              <div className="grid gap-4">
+                <label className="grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600 transition hover:border-blue-400 hover:bg-blue-50/40">
+                  <div>
+                    <p className="font-semibold text-slate-900">
+                      Drop or select documents
+                    </p>
+                    <p className="mt-1">
+                      Supports PDF, DOC, DOCX, TXT, MD, and RTF files. Add many
+                      files at once.
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.txt,.md,.rtf,text/*,application/pdf"
+                    className="hidden"
+                    onChange={(e) => handleDocumentUpload(e.target.files)}
+                  />
+                </label>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-900">
+                      Uploaded documents
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {documents.length} file{documents.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
+                    {documents.length === 0 ? (
+                      <p className="text-sm text-slate-500">
+                        No documents uploaded yet.
+                      </p>
+                    ) : (
+                      documents.map((file, index) => (
+                        <div
+                          key={`${file.name}-${file.lastModified}-${index}`}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-slate-900">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {formatFileSize(file.size)}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDocuments((prev) =>
+                                prev.filter(
+                                  (_, currentIndex) => currentIndex !== index,
+                                ),
+                              )
+                            }
+                            className="shrink-0 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "images" && (
+              <div className="grid gap-4">
+                <label className="grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600 transition hover:border-blue-400 hover:bg-blue-50/40">
+                  <div>
+                    <p className="font-semibold text-slate-900">
+                      Drop or select images
+                    </p>
+                    <p className="mt-1">
+                      Supports PNG, JPG, JPEG, WEBP, and GIF files. Add multiple
+                      images for reference.
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e.target.files)}
+                  />
+                </label>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-900">
+                      Image preview
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {images.length} image{images.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {images.length === 0 ? (
+                      <p className="text-sm text-slate-500">
+                        No images uploaded yet.
+                      </p>
+                    ) : (
+                      images.map((image, index) => (
+                        <div
+                          key={`${image.name}-${image.lastModified}-${index}`}
+                          className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                        >
+                          <img
+                            src={imagePreviews[index]}
+                            alt={image.name}
+                            className="h-40 w-full object-cover"
+                          />
+                          <div className="flex items-center justify-between gap-3 p-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-slate-900">
+                                {image.name}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {formatFileSize(image.size)}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setImages((prev) =>
+                                  prev.filter(
+                                    (_, currentIndex) => currentIndex !== index,
+                                  ),
+                                )
+                              }
+                              className="shrink-0 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-sm font-semibold text-slate-900">Input Summary</p>
+          <div className="mt-4 space-y-4 text-sm text-slate-700">
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <p className="text-xs tracking-wide text-slate-500 uppercase">
+                Text
+              </p>
+              <p className="mt-1 font-medium text-slate-900">
+                {textInput.trim()
+                  ? "Ready for processing"
+                  : "No text added yet"}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <p className="text-xs tracking-wide text-slate-500 uppercase">
+                Documents
+              </p>
+              <p className="mt-1 font-medium text-slate-900">
+                {documents.length} uploaded
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <p className="text-xs tracking-wide text-slate-500 uppercase">
+                Images
+              </p>
+              <p className="mt-1 font-medium text-slate-900">
+                {images.length} uploaded
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -161,7 +455,7 @@ function SettingPage() {
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [error, setError] = useState("");
 
-  const loadModelsForProvider = async () => {
+  const loadModelsForProvider = useCallback(async () => {
     const key = apiKey.trim();
     setError("");
 
@@ -173,80 +467,29 @@ function SettingPage() {
     try {
       setIsLoadingModels(true);
 
-      let models: string[] = [];
+      const res = await fetch("/api/providers/models", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          provider: selectedProvider,
+          apiKey: key,
+        }),
+      });
 
-      if (selectedProvider === "openrouter") {
-        const res = await fetch("https://openrouter.ai/api/v1/models", {
-          headers: {
-            Authorization: `Bearer ${key}`,
-            "HTTP-Referer": window.location.origin,
-            "X-Title": "Easy Update",
-          },
-        });
+      const payload = (await res.json()) as {
+        data?: string[];
+        error?: string;
+      };
 
-        if (!res.ok) {
-          throw new Error(
-            `OpenRouter request failed with status ${res.status}`,
-          );
-        }
-
-        const payload = (await res.json()) as {
-          data?: Array<{ id: string }>;
-        };
-        models = (payload.data ?? []).map((item) => item.id);
-      }
-
-      if (selectedProvider === "openai") {
-        const res = await fetch("https://api.openai.com/v1/models", {
-          headers: {
-            Authorization: `Bearer ${key}`,
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error(`OpenAI request failed with status ${res.status}`);
-        }
-
-        const payload = (await res.json()) as {
-          data?: Array<{ id: string }>;
-        };
-        models = (payload.data ?? []).map((item) => item.id);
-      }
-
-      if (selectedProvider === "anthropic") {
-        const res = await fetch("https://api.anthropic.com/v1/models", {
-          headers: {
-            "x-api-key": key,
-            "anthropic-version": "2023-06-01",
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error(`Anthropic request failed with status ${res.status}`);
-        }
-
-        const payload = (await res.json()) as {
-          data?: Array<{ id: string }>;
-        };
-        models = (payload.data ?? []).map((item) => item.id);
-      }
-
-      if (selectedProvider === "google") {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`,
+      if (!res.ok) {
+        throw new Error(
+          payload.error ?? `Request failed with status ${res.status}`,
         );
-
-        if (!res.ok) {
-          throw new Error(`Google request failed with status ${res.status}`);
-        }
-
-        const payload = (await res.json()) as {
-          models?: Array<{ name: string }>;
-        };
-        models = (payload.models ?? []).map((item) => item.name);
       }
 
-      const normalizedModels = models
+      const normalizedModels = (payload.data ?? [])
         .filter(Boolean)
         .sort((a, b) => a.localeCompare(b));
 
@@ -265,7 +508,7 @@ function SettingPage() {
     } finally {
       setIsLoadingModels(false);
     }
-  };
+  }, [apiKey, selectedProvider]);
 
   useEffect(() => {
     const key = apiKey.trim();
@@ -282,7 +525,7 @@ function SettingPage() {
     }, 500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [apiKey, selectedProvider]);
+  }, [apiKey, loadModelsForProvider]);
 
   return (
     <section className="h-full border border-slate-200 bg-white p-6 shadow-sm">
@@ -378,6 +621,9 @@ function SettingPage() {
 
 function App() {
   const [activePage, setActivePage] = useState<Page>("calendar");
+  const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">(
+    "checking",
+  );
   const [events, setEvents] = useState<CalendarEvent[]>([
     {
       id: "1",
@@ -393,6 +639,34 @@ function App() {
     { id: "setting", label: "Setting" },
   ];
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkApiHealth = async () => {
+      try {
+        const res = await fetch("/api/health");
+
+        if (!isMounted) {
+          return;
+        }
+
+        setApiStatus(res.ok ? "online" : "offline");
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setApiStatus("offline");
+      }
+    };
+
+    void checkApiHealth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <main className="h-screen w-screen overflow-hidden bg-slate-100">
       <div className="grid h-full w-full md:grid-cols-[240px_minmax(0,1fr)]">
@@ -401,6 +675,18 @@ function App() {
             Easy Update
           </h1>
           <p className="mt-1 text-sm text-slate-600">Workspace</p>
+          <div className="mt-3 inline-flex items-center gap-2 border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                apiStatus === "online"
+                  ? "bg-emerald-500"
+                  : apiStatus === "offline"
+                    ? "bg-red-500"
+                    : "bg-amber-500"
+              }`}
+            />
+            API: {apiStatus}
+          </div>
 
           <nav className="mt-5 grid gap-2">
             {navItems.map((item) => (
