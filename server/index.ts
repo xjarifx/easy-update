@@ -1,5 +1,8 @@
 import cors from "cors";
 import express from "express";
+import { desc, eq } from "drizzle-orm";
+import { db } from "./db/index.js";
+import { noticesTable } from "./db/schema.js";
 
 type EventItem = {
   id: string;
@@ -8,6 +11,13 @@ type EventItem = {
 };
 
 type ProviderId = "openrouter" | "openai" | "anthropic" | "google";
+
+type NoticeRecord = {
+  id: number;
+  date: string;
+  time: string;
+  event: string;
+};
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
@@ -32,6 +42,12 @@ const validProviders: ProviderId[] = [
 
 const normalizeModels = (models: string[]) => {
   return models.filter(Boolean).sort((a, b) => a.localeCompare(b));
+};
+
+const parseNoticeId = (value: string) => {
+  const id = Number.parseInt(value, 10);
+
+  return Number.isInteger(id) && id > 0 ? id : null;
 };
 
 const fetchModelsForProvider = async (
@@ -123,6 +139,164 @@ app.get("/api/events", (_req, res) => {
   res.json({ data: events });
 });
 
+app.get("/api/notices", (_req, res) => {
+  const notices = db
+    .select()
+    .from(noticesTable)
+    .orderBy(
+      desc(noticesTable.date),
+      desc(noticesTable.time),
+      desc(noticesTable.id),
+    )
+    .all() as NoticeRecord[];
+
+  res.json({ data: notices });
+});
+
+app.get("/api/notices/:id", (req, res) => {
+  const noticeId = parseNoticeId(req.params.id);
+
+  if (noticeId === null) {
+    res.status(400).json({ error: "id must be a positive integer" });
+    return;
+  }
+
+  const notice = db
+    .select()
+    .from(noticesTable)
+    .where(eq(noticesTable.id, noticeId))
+    .get() as NoticeRecord | undefined;
+
+  if (!notice) {
+    res.status(404).json({ error: "Notice not found" });
+    return;
+  }
+
+  res.json({ data: notice });
+});
+
+app.post("/api/notices", (req, res) => {
+  const { date, time, event } = (req.body ?? {}) as {
+    date?: unknown;
+    time?: unknown;
+    event?: unknown;
+  };
+
+  if (typeof date !== "string" || !date.trim()) {
+    res.status(400).json({ error: "date is required" });
+    return;
+  }
+
+  if (typeof time !== "string" || !time.trim()) {
+    res.status(400).json({ error: "time is required" });
+    return;
+  }
+
+  if (typeof event !== "string" || !event.trim()) {
+    res.status(400).json({ error: "event is required" });
+    return;
+  }
+
+  const result = db
+    .insert(noticesTable)
+    .values({
+      date: date.trim(),
+      time: time.trim(),
+      event: event.trim(),
+    })
+    .run();
+
+  const notice = db
+    .select()
+    .from(noticesTable)
+    .where(eq(noticesTable.id, Number(result.lastInsertRowid)))
+    .get() as NoticeRecord | undefined;
+
+  res.status(201).json({ data: notice });
+});
+
+app.put("/api/notices/:id", (req, res) => {
+  const noticeId = parseNoticeId(req.params.id);
+
+  if (noticeId === null) {
+    res.status(400).json({ error: "id must be a positive integer" });
+    return;
+  }
+
+  const { date, time, event } = (req.body ?? {}) as {
+    date?: unknown;
+    time?: unknown;
+    event?: unknown;
+  };
+
+  if (typeof date !== "string" || !date.trim()) {
+    res.status(400).json({ error: "date is required" });
+    return;
+  }
+
+  if (typeof time !== "string" || !time.trim()) {
+    res.status(400).json({ error: "time is required" });
+    return;
+  }
+
+  if (typeof event !== "string" || !event.trim()) {
+    res.status(400).json({ error: "event is required" });
+    return;
+  }
+
+  const existingNotice = db
+    .select()
+    .from(noticesTable)
+    .where(eq(noticesTable.id, noticeId))
+    .get() as NoticeRecord | undefined;
+
+  if (!existingNotice) {
+    res.status(404).json({ error: "Notice not found" });
+    return;
+  }
+
+  db.update(noticesTable)
+    .set({
+      date: date.trim(),
+      time: time.trim(),
+      event: event.trim(),
+    })
+    .where(eq(noticesTable.id, noticeId))
+    .run();
+
+  const notice = db
+    .select()
+    .from(noticesTable)
+    .where(eq(noticesTable.id, noticeId))
+    .get() as NoticeRecord | undefined;
+
+  res.json({ data: notice ?? existingNotice });
+});
+
+app.delete("/api/notices/:id", (req, res) => {
+  const noticeId = parseNoticeId(req.params.id);
+
+  if (noticeId === null) {
+    res.status(400).json({ error: "id must be a positive integer" });
+    return;
+  }
+
+  const notice = db
+    .select()
+    .from(noticesTable)
+    .where(eq(noticesTable.id, noticeId))
+    .get() as NoticeRecord | undefined;
+
+  if (!notice) {
+    res.status(404).json({ error: "Notice not found" });
+    return;
+  }
+
+  db.delete(noticesTable).where(eq(noticesTable.id, noticeId)).run();
+
+  res.json({ data: notice });
+});
+
 app.post("/api/events", (req, res) => {
   const { title, start } = (req.body ?? {}) as {
     title?: unknown;
@@ -154,11 +328,9 @@ app.post("/api/providers/models", async (req, res) => {
     typeof provider !== "string" ||
     !validProviders.includes(provider as ProviderId)
   ) {
-    res
-      .status(400)
-      .json({
-        error: "provider must be one of openrouter, openai, anthropic, google",
-      });
+    res.status(400).json({
+      error: "provider must be one of openrouter, openai, anthropic, google",
+    });
     return;
   }
 
