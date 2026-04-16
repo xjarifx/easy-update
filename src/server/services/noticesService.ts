@@ -30,6 +30,16 @@ type NoticeMutationResult =
   | { error: string; status?: number }
   | { value: NoticeRecord };
 
+const isDateTimeInPast = (date: string, time: string) => {
+  const value = new Date(`${date}T${time}:00`);
+
+  if (Number.isNaN(value.getTime())) {
+    return false;
+  }
+
+  return value.getTime() < Date.now();
+};
+
 export const parseNoticeId = (value: string) => {
   const id = Number.parseInt(value, 10);
 
@@ -102,6 +112,14 @@ export const createNoticeFromInput = async (
 
   if ("error" in normalized) {
     return normalized;
+  }
+
+  if (isDateTimeInPast(normalized.value.date, normalized.value.time)) {
+    return {
+      error:
+        "Warning: date and time already passed. Please choose a future time.",
+      status: 400,
+    };
   }
 
   const created = await createNotice(normalized.value);

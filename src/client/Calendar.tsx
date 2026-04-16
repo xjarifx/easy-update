@@ -128,6 +128,9 @@ export default function Calendar({
   const selectedDayEvents = events.filter(
     (event) => event.start.split("T")[0] === selectedDate,
   );
+  const isPastDateWarning = submitError
+    .toLowerCase()
+    .includes("already passed");
 
   const handleAddEvent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,7 +236,15 @@ export default function Calendar({
             ) : null}
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
             {submitError ? (
-              <p className="text-sm text-red-600">{submitError}</p>
+              <p
+                className={
+                  isPastDateWarning
+                    ? "text-sm text-amber-700"
+                    : "text-sm text-red-600"
+                }
+              >
+                {submitError}
+              </p>
             ) : null}
           </div>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">

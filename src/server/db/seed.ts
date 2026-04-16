@@ -21,8 +21,18 @@ const demoNotices = [
   { date: "2026-04-19", time: "16:00", event: "Weekly project retrospective" },
 ];
 
+const normalizedDatabaseUrl = (() => {
+  const url = new URL(databaseUrl);
+  url.searchParams.delete("sslmode");
+
+  return url.toString();
+})();
+
 const seed = async () => {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = new Pool({
+    connectionString: normalizedDatabaseUrl,
+    ssl: { rejectUnauthorized: false },
+  });
   const db = drizzle(pool);
 
   try {

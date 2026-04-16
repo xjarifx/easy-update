@@ -8,8 +8,16 @@ if (!databaseUrl) {
   throw new Error("DATABASE_URL is required for PostgreSQL connection");
 }
 
+const normalizedDatabaseUrl = (() => {
+  const url = new URL(databaseUrl);
+  url.searchParams.delete("sslmode");
+
+  return url.toString();
+})();
+
 const pool = new Pool({
-  connectionString: databaseUrl,
+  connectionString: normalizedDatabaseUrl,
+  ssl: { rejectUnauthorized: false },
 });
 
 export const db = drizzle(pool);
