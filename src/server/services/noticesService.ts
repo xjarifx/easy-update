@@ -161,13 +161,43 @@ export const deleteNoticeById = async (
 export const createNoticesFromExtractedEvents = async (
   events: ExtractedEvent[],
 ) => {
-  const values = events.map((event) => ({
-    date: event.date,
-    time: event.time,
-    description: event.title,
-  }));
+  const validatedEvents: NormalizedNoticeInput[] = [];
 
-  const created = await createManyNotices(values);
+  for (const event of events) {
+    // Convert ExtractedEvent to NoticeMutationInput format for validation
+    const input: NoticeMutationInput = {
+      date: event.date,
+      time: event.time,
+      description: event.title,
+    };
+
+    // Validate using the same pipeline as manual events
+    const normalized = normalizeNoticeInput(input);
+
+    if ("error" in normalized) {
+      // Log validation error but continue processing other events
+      console.warn(
+        `Skipping invalid extracted event: ${normalized.error}`,
+        event,
+      );
+      continue;
+    }
+
+    // Check if date/time is in the past
+    if (isDateTimeInPast(normalized.value.date, normalized.value.time)) {
+      console.warn(`Skipping past date event:`, event);
+      continue;
+    }
+
+    validatedEvents.push(normalized.value);
+  }
+
+  // Only insert valid events
+  if (validatedEvents.length === 0) {
+    return [];
+  }
+
+  const created = await createManyNotices(validatedEvents);
 
   return created.map(normalizeNotice);
 };

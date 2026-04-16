@@ -3,11 +3,11 @@ import {
   VALID_PROVIDERS,
   type CalendarEventItem,
   type NoticeMutationInput,
+  type NoticeRecord,
   type ProviderId,
 } from "../domain/types.js";
 import {
   createNoticeFromInput,
-  createNoticesFromExtractedEvents,
   getNotices,
 } from "../services/noticesService.js";
 import { extractEvents } from "../services/eventExtractionService.js";
@@ -119,12 +119,33 @@ eventsRouter.post("/extract-and-create", async (req, res) => {
       return;
     }
 
-    const created = await createNoticesFromExtractedEvents(extractedEvents);
+    // Process each extracted event through the API validation pipeline
+    const created: NoticeRecord[] = [];
+    const failed: Array<{ event: (typeof extractedEvents)[0]; error: string }> =
+      [];
+
+    for (const event of extractedEvents) {
+      const input: NoticeMutationInput = {
+        date: event.date,
+        time: event.time,
+        description: event.title,
+      };
+
+      const result = await createNoticeFromInput(input);
+
+      if ("error" in result) {
+        failed.push({ event, error: result.error });
+      } else {
+        created.push(result.value);
+      }
+    }
 
     res.status(201).json({
       data: {
         createdCount: created.length,
         events: created,
+        failedCount: failed.length,
+        failed: failed.length > 0 ? failed : undefined,
       },
     });
   } catch (error) {
