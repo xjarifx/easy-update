@@ -1399,7 +1399,9 @@ function App() {
         </aside>
 
         <section className="min-w-0 overflow-auto p-4 md:p-6">
-          {activePage === "input" && <InputPage />}
+          <div className={activePage === "input" ? "block" : "hidden"}>
+            <InputPage />
+          </div>
           {activePage === "notice" && (
             <NoticePage
               notices={notices}
