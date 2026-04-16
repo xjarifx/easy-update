@@ -1,4 +1,5 @@
 import type { ExtractedEvent, ProviderId } from "../domain/types.js";
+import { AppError } from "../utils/errors.js";
 import {
   toCanonicalNoticeDate,
   toCanonicalNoticeTime,
@@ -6,6 +7,69 @@ import {
 import { eventExtractionSystemPrompt } from "../../../docs/eventExtractionPrompt.js";
 
 const emptyEventsJson = '{"events":[]}';
+
+const readProviderErrorMessage = async (
+  response: Response,
+  providerName: string,
+  fallback: string,
+) => {
+  const withHint = (message: string) => {
+    const normalized = message.trim();
+
+    if (response.status === 429) {
+      return `${providerName} rate limit reached (429). ${normalized}`;
+    }
+
+    return normalized;
+  };
+
+  try {
+    const payload = (await response.json()) as {
+      error?:
+        | {
+            message?: string;
+            metadata?: {
+              raw?: string;
+              provider_name?: string;
+            };
+            code?: string;
+          }
+        | string;
+      message?: string;
+    };
+
+    if (typeof payload.error === "string" && payload.error.trim()) {
+      return withHint(payload.error);
+    }
+
+    if (
+      payload.error &&
+      typeof payload.error === "object" &&
+      typeof payload.error.message === "string" &&
+      payload.error.message.trim()
+    ) {
+      const message = payload.error.message;
+
+      if (
+        message.trim().toLowerCase() === "provider returned error" &&
+        typeof payload.error.metadata?.raw === "string" &&
+        payload.error.metadata.raw.trim()
+      ) {
+        return withHint(payload.error.metadata.raw);
+      }
+
+      return withHint(message);
+    }
+
+    if (typeof payload.message === "string" && payload.message.trim()) {
+      return withHint(payload.message);
+    }
+  } catch {
+    // Ignore body parsing failures and use fallback status message.
+  }
+
+  return withHint(fallback);
+};
 
 const parseJsonObjectFromText = (value: string) => {
   const start = value.indexOf("{");
@@ -91,9 +155,13 @@ const extractEventJsonFromModel = async (
     );
 
     if (!response.ok) {
-      throw new Error(
+      const message = await readProviderErrorMessage(
+        response,
+        "OpenRouter",
         `OpenRouter extraction failed with status ${response.status}`,
       );
+
+      throw new AppError(response.status, message);
     }
 
     const payload = (await response.json()) as {
@@ -122,9 +190,13 @@ const extractEventJsonFromModel = async (
     });
 
     if (!response.ok) {
-      throw new Error(
+      const message = await readProviderErrorMessage(
+        response,
+        "OpenAI",
         `OpenAI extraction failed with status ${response.status}`,
       );
+
+      throw new AppError(response.status, message);
     }
 
     const payload = (await response.json()) as {
@@ -152,9 +224,13 @@ const extractEventJsonFromModel = async (
     });
 
     if (!response.ok) {
-      throw new Error(
+      const message = await readProviderErrorMessage(
+        response,
+        "Anthropic",
         `Anthropic extraction failed with status ${response.status}`,
       );
+
+      throw new AppError(response.status, message);
     }
 
     const payload = (await response.json()) as {
@@ -192,7 +268,13 @@ const extractEventJsonFromModel = async (
   );
 
   if (!response.ok) {
-    throw new Error(`Google extraction failed with status ${response.status}`);
+    const message = await readProviderErrorMessage(
+      response,
+      "Google",
+      `Google extraction failed with status ${response.status}`,
+    );
+
+    throw new AppError(response.status, message);
   }
 
   const payload = (await response.json()) as {
