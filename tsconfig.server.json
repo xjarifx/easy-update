@@ -12,7 +12,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "outDir": "dist-server",
-    "rootDir": "src/server"
+    "rootDir": "."
   },
-  "include": ["src/server/**/*.ts"]
+  "include": ["src/server/**/*.ts", "docs/**/*.ts"]
 }

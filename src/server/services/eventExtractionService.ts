@@ -1,14 +1,9 @@
 import type { ExtractedEvent, ProviderId } from "../domain/types.js";
-
-const eventExtractionSystemPrompt = `You extract event information only.
-
-Rules:
-1. Return only JSON with this exact shape: {"events":[{"title":"...","date":"YYYY-MM-DD","time":"HH:MM"}]}
-2. Extract only concrete event info from the input.
-3. Do not include explanations, notes, markdown, or any extra keys.
-4. If no event info exists, return {"events":[]}.
-5. Use 24-hour time format HH:MM.
-6. Keep title concise and meaningful.`;
+import {
+  toCanonicalNoticeDate,
+  toCanonicalNoticeTime,
+} from "../utils/noticeNormalization.js";
+import { eventExtractionSystemPrompt } from "../../../docs/eventExtractionPrompt.js";
 
 const emptyEventsJson = '{"events":[]}';
 
@@ -22,9 +17,6 @@ const parseJsonObjectFromText = (value: string) => {
 
   return JSON.parse(value.slice(start, end + 1)) as { events?: unknown };
 };
-
-const isValidDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
-const isValidTime = (value: string) => /^\d{2}:\d{2}$/.test(value);
 
 const validateExtractedEvents = (input: unknown): ExtractedEvent[] => {
   if (!Array.isArray(input)) {
@@ -52,14 +44,10 @@ const validateExtractedEvents = (input: unknown): ExtractedEvent[] => {
       }
 
       const normalizedTitle = title.trim();
-      const normalizedDate = date.trim();
-      const normalizedTime = time.trim();
+      const normalizedDate = toCanonicalNoticeDate(date);
+      const normalizedTime = toCanonicalNoticeTime(time);
 
-      if (
-        !normalizedTitle ||
-        !isValidDate(normalizedDate) ||
-        !isValidTime(normalizedTime)
-      ) {
+      if (!normalizedTitle || !normalizedDate || !normalizedTime) {
         return null;
       }
 

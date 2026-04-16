@@ -9,7 +9,7 @@
     "dev:server": "tsx watch src/server/index.ts",
     "dev:full": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "start": "npm run build && npm run start:built",
-    "start:built": "node dist-server/index.js",
+    "start:built": "node dist-server/src/server/index.js",
     "build": "tsc -b --force && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

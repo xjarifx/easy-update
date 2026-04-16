@@ -4,6 +4,25 @@ const normalizeModels = (models: string[]) => {
   return models.filter(Boolean).sort((a, b) => a.localeCompare(b));
 };
 
+const isFreeOpenRouterModel = (model: {
+  id?: string;
+  pricing?: { prompt?: string | number; completion?: string | number };
+  free?: boolean;
+}) => {
+  if (model.free === true) {
+    return true;
+  }
+
+  if (typeof model.id === "string" && model.id.includes(":free")) {
+    return true;
+  }
+
+  const promptPrice = Number(model.pricing?.prompt ?? Number.NaN);
+  const completionPrice = Number(model.pricing?.completion ?? Number.NaN);
+
+  return promptPrice === 0 && completionPrice === 0;
+};
+
 export const fetchModelsForProvider = async (
   provider: ProviderId,
   apiKey: string,
@@ -25,9 +44,15 @@ export const fetchModelsForProvider = async (
     }
 
     const payload = (await response.json()) as {
-      data?: Array<{ id: string }>;
+      data?: Array<{
+        id: string;
+        pricing?: { prompt?: string | number; completion?: string | number };
+        free?: boolean;
+      }>;
     };
-    return normalizeModels((payload.data ?? []).map((item) => item.id));
+    return normalizeModels(
+      (payload.data ?? []).filter(isFreeOpenRouterModel).map((item) => item.id),
+    );
   }
 
   if (provider === "openai") {

@@ -15,6 +15,7 @@ const monthIndexByShortName: Record<string, number> = {
 
 const parseNoticeDateParts = (value: string) => {
   const trimmed = value.trim();
+  const currentYear = new Date().getFullYear();
 
   const isoMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
 
@@ -75,6 +76,36 @@ const parseNoticeDateParts = (value: string) => {
         month: monthIndex + 1,
         day: Number(verboseMonthMatch[2]),
       };
+    }
+  }
+
+  const monthDayWithoutYearMatch = trimmed.match(
+    /^([A-Za-z]{3,9})\s+(\d{1,2})$/,
+  );
+
+  if (monthDayWithoutYearMatch) {
+    const shortMonth = monthDayWithoutYearMatch[1].slice(0, 3).toUpperCase();
+    const monthIndex = monthIndexByShortName[shortMonth];
+
+    if (monthIndex !== undefined) {
+      const month = monthIndex + 1;
+      const day = Number(monthDayWithoutYearMatch[2]);
+
+      if (isValidDateParts(currentYear, month, day)) {
+        const candidate = new Date(currentYear, month - 1, day);
+        const today = new Date();
+        const todayStart = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate(),
+        );
+
+        return {
+          year: candidate < todayStart ? currentYear + 1 : currentYear,
+          month,
+          day,
+        };
+      }
     }
   }
 

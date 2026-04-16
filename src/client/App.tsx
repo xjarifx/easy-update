@@ -186,9 +186,7 @@ function InputPage() {
     const savedSettings = readSavedSettings();
 
     if (!savedSettings?.selectedModel) {
-      setProcessStatus(
-        "Set provider, API key, and model in Setting before processing.",
-      );
+      setProcessStatus("Set API key and model in Setting before processing.");
       return;
     }
 
@@ -928,24 +926,28 @@ function NoticePage({
 }
 
 function SettingPage() {
-  const providerOptions: { id: ProviderId; label: string }[] = [
-    { id: "openrouter", label: "OpenRouter" },
-    { id: "openai", label: "OpenAI" },
-    { id: "anthropic", label: "Anthropic" },
-    { id: "google", label: "Google" },
-  ];
-
-  const [selectedProvider, setSelectedProvider] =
-    useState<ProviderId>("openrouter");
   const [apiKey, setApiKey] = useState("");
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
+  const [modelQuery, setModelQuery] = useState("");
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [error, setError] = useState("");
   const [isHydrating, setIsHydrating] = useState(true);
   const [saveMessage, setSaveMessage] = useState(
-    "Your API key is saved locally and encrypted.",
+    "Your OpenRouter API key is saved locally and encrypted.",
   );
+
+  const filteredModels = useMemo(() => {
+    const query = modelQuery.trim().toLowerCase();
+
+    if (!query) {
+      return availableModels;
+    }
+
+    return availableModels.filter((model) =>
+      model.toLowerCase().includes(query),
+    );
+  }, [availableModels, modelQuery]);
 
   useEffect(() => {
     let isMounted = true;
@@ -968,10 +970,12 @@ function SettingPage() {
           return;
         }
 
-        setSelectedProvider(savedSettings.provider);
         setApiKey(decryptedApiKey);
         setSelectedModel(savedSettings.selectedModel);
-        setSaveMessage("Loaded saved API key from local encrypted storage.");
+        setModelQuery(savedSettings.selectedModel);
+        setSaveMessage(
+          "Loaded saved OpenRouter API key from local encrypted storage.",
+        );
       } catch {
         if (!isMounted) {
           return;
@@ -980,7 +984,8 @@ function SettingPage() {
         window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
         setApiKey("");
         setSelectedModel("");
-        setSaveMessage("Saved API key could not be restored.");
+        setModelQuery("");
+        setSaveMessage("Saved OpenRouter API key could not be restored.");
       } finally {
         if (isMounted) {
           setIsHydrating(false);
@@ -1007,32 +1012,36 @@ function SettingPage() {
     try {
       setIsLoadingModels(true);
 
-      const models = await fetchProviderModels(selectedProvider, key);
+      const models = await fetchProviderModels(key);
 
       const normalizedModels = models
         .filter(Boolean)
         .sort((a, b) => a.localeCompare(b));
 
       setAvailableModels(normalizedModels);
-      setSelectedModel((previousModel) =>
-        normalizedModels.includes(previousModel)
+      setSelectedModel((previousModel) => {
+        const nextModel = normalizedModels.includes(previousModel)
           ? previousModel
-          : (normalizedModels[0] ?? ""),
-      );
+          : (normalizedModels[0] ?? "");
+
+        setModelQuery(nextModel);
+        return nextModel;
+      });
 
       if (normalizedModels.length === 0) {
-        setError("No models returned for this provider and API key.");
+        setError("No free OpenRouter models returned for this API key.");
       }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to fetch models.";
       setAvailableModels([]);
       setSelectedModel("");
+      setModelQuery("");
       setError(message);
     } finally {
       setIsLoadingModels(false);
     }
-  }, [apiKey, selectedProvider]);
+  }, [apiKey]);
 
   useEffect(() => {
     if (isHydrating) {
@@ -1044,6 +1053,7 @@ function SettingPage() {
     if (!key) {
       setAvailableModels([]);
       setSelectedModel("");
+      setModelQuery("");
       setError("");
       window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
       return;
@@ -1071,28 +1081,29 @@ function SettingPage() {
 
     const persistTimeoutId = window.setTimeout(() => {
       void saveEncryptedSettings({
-        provider: selectedProvider,
+        provider: "openrouter",
         apiKey,
         selectedModel,
       })
         .then(() => {
-          setSaveMessage("API key saved locally and encrypted.");
+          setSaveMessage("OpenRouter API key saved locally and encrypted.");
         })
         .catch(() => {
-          setSaveMessage("Could not save the API key locally.");
+          setSaveMessage("Could not save the OpenRouter API key locally.");
         });
     }, 300);
 
     return () => {
       window.clearTimeout(persistTimeoutId);
     };
-  }, [apiKey, isHydrating, selectedModel, selectedProvider]);
+  }, [apiKey, isHydrating, selectedModel]);
 
   return (
     <section className="h-full border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-2xl font-semibold text-slate-900">Setting</h2>
       <p className="mt-1 text-sm text-slate-600">
-        Configure app preferences and workflow defaults.
+        Configure the OpenRouter API key and choose from the currently usable
+        free models.
       </p>
 
       <div className="mt-5 grid gap-3 text-sm text-slate-800">
@@ -1110,67 +1121,110 @@ function SettingPage() {
       <div className="mt-8 border border-slate-200 bg-slate-50 p-4">
         <h3 className="text-lg font-semibold text-slate-900">API Key</h3>
         <p className="mt-1 text-sm text-slate-600">
-          Step 1: choose your provider. Step 2: paste that provider&apos;s API
-          key. Step 3: load and select a model available for that key.
+          Step 1: paste your OpenRouter API key. Step 2: load the free models
+          that key can use. Step 3: search and pick a model.
         </p>
         <p className="mt-1 text-xs text-slate-500">
           Model search runs automatically after you paste the API key.
         </p>
 
         <div className="mt-4 grid gap-4">
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            Provider (Choose One)
-            <select
-              value={selectedProvider}
-              onChange={(e) => {
-                setSelectedProvider(e.target.value as ProviderId);
-                setAvailableModels([]);
-                setSelectedModel("");
-                setError("");
-              }}
-              className="border border-slate-300 bg-white px-3 py-2 text-slate-900 ring-blue-500 outline-none focus:ring-2"
-            >
-              {providerOptions.map((provider) => (
-                <option key={provider.id} value={provider.id}>
-                  {provider.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+            Provider:{" "}
+            <span className="font-semibold text-slate-900">OpenRouter</span>
+            <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+              free models only
+            </span>
+          </div>
 
           <label className="grid gap-1 text-sm font-medium text-slate-700">
-            API Key (For Selected Provider)
+            API Key
             <input
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder={
-                selectedProvider === "openrouter"
-                  ? "sk-or-v1-..."
-                  : `Enter ${selectedProvider} key`
-              }
+              placeholder="sk-or-v1-..."
               className="border border-slate-300 px-3 py-2 text-slate-900 ring-blue-500 outline-none focus:ring-2"
             />
           </label>
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            AI Model (Available for This Key)
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="border border-slate-300 bg-white px-3 py-2 text-slate-900 ring-blue-500 outline-none focus:ring-2"
-              disabled={availableModels.length === 0}
-            >
+
+          <div className="grid gap-1 text-sm font-medium text-slate-700">
+            <label htmlFor="model-search">Search AI model</label>
+            <input
+              id="model-search"
+              type="search"
+              value={modelQuery}
+              onChange={(e) => setModelQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && filteredModels[0]) {
+                  e.preventDefault();
+                  setSelectedModel(filteredModels[0]);
+                  setModelQuery(filteredModels[0]);
+                }
+              }}
+              placeholder="Search free OpenRouter models"
+              className="border border-slate-300 px-3 py-2 text-slate-900 ring-blue-500 outline-none focus:ring-2"
+            />
+            <p className="text-xs font-normal text-slate-500">
+              Search across the free OpenRouter model suggestions and click one
+              to select it.
+            </p>
+          </div>
+
+          <div className="border border-slate-200 bg-white">
+            <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 text-xs text-slate-500">
+              <span>
+                {filteredModels.length} suggestion
+                {filteredModels.length === 1 ? "" : "s"}
+              </span>
+              <span>
+                {selectedModel
+                  ? `Selected: ${selectedModel}`
+                  : "No model selected"}
+              </span>
+            </div>
+
+            <div className="max-h-72 overflow-auto">
               {availableModels.length === 0 ? (
-                <option value="">No models loaded</option>
+                <div className="px-3 py-4 text-sm text-slate-500">
+                  No models loaded yet.
+                </div>
+              ) : filteredModels.length === 0 ? (
+                <div className="px-3 py-4 text-sm text-slate-500">
+                  No free OpenRouter models match your search.
+                </div>
               ) : (
-                availableModels.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))
+                filteredModels.slice(0, 50).map((model) => {
+                  const isSelected = model === selectedModel;
+
+                  return (
+                    <button
+                      key={model}
+                      type="button"
+                      onClick={() => {
+                        setSelectedModel(model);
+                        setModelQuery(model);
+                      }}
+                      className={`flex w-full items-center justify-between gap-3 border-b border-slate-100 px-3 py-2 text-left text-sm transition last:border-b-0 hover:bg-slate-50 ${
+                        isSelected
+                          ? "bg-blue-50 text-blue-900"
+                          : "text-slate-700"
+                      }`}
+                    >
+                      <span className="min-w-0 truncate font-medium">
+                        {model}
+                      </span>
+                      {isSelected ? (
+                        <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                          Selected
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })
               )}
-            </select>
-          </label>
+            </div>
+          </div>
 
           {isLoadingModels ? (
             <p className="text-xs text-slate-500">Loading models...</p>
