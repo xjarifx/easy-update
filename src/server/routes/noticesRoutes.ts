@@ -7,76 +7,91 @@ import {
   parseNoticeId,
   updateNoticeFromInput,
 } from "../services/noticesService.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ValidationError, NotFoundError } from "../utils/errors.js";
 
 export const noticesRouter = Router();
 
-noticesRouter.get("/", async (_req, res) => {
-  const data = await getNotices();
+noticesRouter.get(
+  "/",
+  asyncHandler(async (_req, res) => {
+    const data = await getNotices();
+    res.json({ data });
+  }),
+);
 
-  res.json({ data });
-});
+noticesRouter.get(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const id = parseNoticeId(req.params.id as string);
 
-noticesRouter.get("/:id", async (req, res) => {
-  const id = parseNoticeId(req.params.id);
+    if (id === null) {
+      throw new ValidationError("id must be a positive integer");
+    }
 
-  if (id === null) {
-    res.status(400).json({ error: "id must be a positive integer" });
-    return;
-  }
+    const data = await getNoticeById(id);
 
-  const data = await getNoticeById(id);
+    if (!data) {
+      throw new NotFoundError("Notice");
+    }
 
-  if (!data) {
-    res.status(404).json({ error: "Notice not found" });
-    return;
-  }
+    res.json({ data });
+  }),
+);
 
-  res.json({ data });
-});
+noticesRouter.post(
+  "/",
+  asyncHandler(async (req, res) => {
+    const result = await createNoticeFromInput(req.body ?? {});
 
-noticesRouter.post("/", async (req, res) => {
-  const result = await createNoticeFromInput(req.body ?? {});
+    if ("error" in result) {
+      throw new ValidationError(result.error);
+    }
 
-  if ("error" in result) {
-    res.status(400).json({ error: result.error });
-    return;
-  }
+    res.status(201).json({ data: result.value });
+  }),
+);
 
-  res.status(201).json({ data: result.value });
-});
+noticesRouter.put(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const id = parseNoticeId(req.params.id as string);
 
-noticesRouter.put("/:id", async (req, res) => {
-  const id = parseNoticeId(req.params.id);
+    if (id === null) {
+      throw new ValidationError("id must be a positive integer");
+    }
 
-  if (id === null) {
-    res.status(400).json({ error: "id must be a positive integer" });
-    return;
-  }
+    const result = await updateNoticeFromInput(id, req.body ?? {});
 
-  const result = await updateNoticeFromInput(id, req.body ?? {});
+    if ("error" in result) {
+      const status = result.status ?? 400;
+      const error = new ValidationError(result.error);
+      error.statusCode = status;
+      throw error;
+    }
 
-  if ("error" in result) {
-    res.status(result.status ?? 400).json({ error: result.error });
-    return;
-  }
+    res.json({ data: result.value });
+  }),
+);
 
-  res.json({ data: result.value });
-});
+noticesRouter.delete(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const id = parseNoticeId(req.params.id as string);
 
-noticesRouter.delete("/:id", async (req, res) => {
-  const id = parseNoticeId(req.params.id);
+    if (id === null) {
+      throw new ValidationError("id must be a positive integer");
+    }
 
-  if (id === null) {
-    res.status(400).json({ error: "id must be a positive integer" });
-    return;
-  }
+    const result = await deleteNoticeById(id);
 
-  const result = await deleteNoticeById(id);
+    if ("error" in result) {
+      const status = result.status ?? 400;
+      const error = new ValidationError(result.error);
+      error.statusCode = status;
+      throw error;
+    }
 
-  if ("error" in result) {
-    res.status(result.status ?? 400).json({ error: result.error });
-    return;
-  }
-
-  res.json({ data: result.value });
-});
+    res.status(204).send();
+  }),
+);
