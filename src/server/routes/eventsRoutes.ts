@@ -18,7 +18,7 @@ eventsRouter.get("/", async (_req, res) => {
   const notices = await getNotices();
   const data: CalendarEventItem[] = notices.map((notice) => ({
     id: String(notice.id),
-    title: notice.event,
+    title: notice.description,
     start: `${notice.date}T${notice.time}:00`,
   }));
 
@@ -53,7 +53,7 @@ eventsRouter.post("/", async (req, res) => {
     time: `${String(dateValue.getHours()).padStart(2, "0")}:${String(
       dateValue.getMinutes(),
     ).padStart(2, "0")}`,
-    event: title.trim(),
+    description: title.trim(),
   };
 
   const result = await createNoticeFromInput(input);
@@ -66,7 +66,7 @@ eventsRouter.post("/", async (req, res) => {
   res.status(201).json({
     data: {
       id: String(result.value.id),
-      title: result.value.event,
+      title: result.value.description,
       start: `${result.value.date}T${result.value.time}:00`,
     },
   });

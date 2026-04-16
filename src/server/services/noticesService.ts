@@ -19,7 +19,7 @@ import {
 type NormalizedNoticeInput = {
   date: string;
   time: string;
-  event: string;
+  description: string;
 };
 
 type NoticeInputValidationResult =
@@ -80,8 +80,8 @@ const normalizeNoticeInput = (
     return { error: "time is required" } as const;
   }
 
-  if (!input.event.trim()) {
-    return { error: "event is required" } as const;
+  if (!input.description.trim()) {
+    return { error: "description is required" } as const;
   }
 
   const normalizedDate = toCanonicalNoticeDate(input.date);
@@ -100,7 +100,7 @@ const normalizeNoticeInput = (
     value: {
       date: normalizedDate,
       time: normalizedTime,
-      event: input.event.trim(),
+      description: input.description.trim(),
     },
   } as const;
 };
@@ -164,7 +164,7 @@ export const createNoticesFromExtractedEvents = async (
   const values = events.map((event) => ({
     date: event.date,
     time: event.time,
-    event: event.title,
+    description: event.title,
   }));
 
   const created = await createManyNotices(values);

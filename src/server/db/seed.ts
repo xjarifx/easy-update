@@ -13,12 +13,24 @@ const demoNotices = [
   {
     date: "2026-04-16",
     time: "09:00",
-    event: "Team standup and sprint planning",
+    description: "Team standup and sprint planning",
   },
-  { date: "2026-04-16", time: "14:30", event: "Client update call" },
-  { date: "2026-04-17", time: "10:15", event: "Database migration dry run" },
-  { date: "2026-04-18", time: "11:00", event: "Release checklist review" },
-  { date: "2026-04-19", time: "16:00", event: "Weekly project retrospective" },
+  { date: "2026-04-16", time: "14:30", description: "Client update call" },
+  {
+    date: "2026-04-17",
+    time: "10:15",
+    description: "Database migration dry run",
+  },
+  {
+    date: "2026-04-18",
+    time: "11:00",
+    description: "Release checklist review",
+  },
+  {
+    date: "2026-04-19",
+    time: "16:00",
+    description: "Weekly project retrospective",
+  },
 ];
 
 const normalizedDatabaseUrl = (() => {

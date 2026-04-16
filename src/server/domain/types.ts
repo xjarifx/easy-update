@@ -11,13 +11,13 @@ export type NoticeRecord = {
   id: number;
   date: string;
   time: string;
-  event: string;
+  description: string;
 };
 
 export type NoticeMutationInput = {
   date: string;
   time: string;
-  event: string;
+  description: string;
 };
 
 export type ExtractedEvent = {

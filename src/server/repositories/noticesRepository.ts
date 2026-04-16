@@ -36,7 +36,7 @@ export const findNoticeById = async (id: number) => {
 export const createNotice = async (input: {
   date: string;
   time: string;
-  event: string;
+  description: string;
 }) => {
   const [notice] = await db.insert(noticesTable).values(input).returning();
 
@@ -44,7 +44,7 @@ export const createNotice = async (input: {
 };
 
 export const createManyNotices = async (
-  values: Array<{ date: string; time: string; event: string }>,
+  values: Array<{ date: string; time: string; description: string }>,
 ) => {
   if (values.length === 0) {
     return [] as NoticeRecord[];
@@ -60,7 +60,7 @@ export const updateNotice = async (
   input: {
     date: string;
     time: string;
-    event: string;
+    description: string;
   },
 ) => {
   const [notice] = await db

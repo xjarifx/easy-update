@@ -1,0 +1,10 @@
+                               Table "public.events"
+   Column    |  Type   | Collation | Nullable |              Default               
+-------------+---------+-----------+----------+------------------------------------
+ id          | integer |           | not null | nextval('events_id_seq'::regclass)
+ date        | text    |           | not null | 
+ time        | text    |           | not null | 
+ description | text    |           | not null | 
+Indexes:
+    "events_pkey" PRIMARY KEY, btree (id)
+

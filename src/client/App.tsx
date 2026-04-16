@@ -691,7 +691,7 @@ function NoticePage({
   const [formData, setFormData] = useState({
     date: getTodayLocalDate(),
     time: "09:00",
-    event: "",
+    description: "",
   });
 
   const formatDisplayDate = (value: Date | string) => {
@@ -710,7 +710,7 @@ function NoticePage({
     setFormData({
       date: getTodayLocalDate(),
       time: "09:00",
-      event: "",
+      description: "",
     });
     setEditingNoticeId(null);
     setActionError("");
@@ -719,8 +719,8 @@ function NoticePage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.date || !formData.time || !formData.event.trim()) {
-      setActionError("Date, time, and event are required.");
+    if (!formData.date || !formData.time || !formData.description.trim()) {
+      setActionError("Date, time, and description are required.");
       return;
     }
 
@@ -732,13 +732,13 @@ function NoticePage({
         await onCreateNotice({
           date: formData.date,
           time: formData.time,
-          event: formData.event.trim(),
+          description: formData.description.trim(),
         });
       } else {
         await onUpdateNotice(editingNoticeId, {
           date: formData.date,
           time: formData.time,
-          event: formData.event.trim(),
+          description: formData.description.trim(),
         });
       }
 
@@ -757,14 +757,14 @@ function NoticePage({
     setFormData({
       date: notice.date,
       time: notice.time,
-      event: notice.event,
+      description: notice.description,
     });
     setActionError("");
   };
 
   const handleDelete = async (notice: NoticeItem) => {
     const shouldDelete = window.confirm(
-      `Delete notice "${notice.event}" on ${notice.date} ${notice.time}?`,
+      `Delete notice "${notice.description}" on ${notice.date} ${notice.time}?`,
     );
 
     if (!shouldDelete) {
@@ -821,14 +821,14 @@ function NoticePage({
         </label>
 
         <label className="grid gap-1 text-sm font-medium text-slate-700">
-          Event
+          Description
           <input
             type="text"
-            value={formData.event}
+            value={formData.description}
             onChange={(e) =>
-              setFormData((prev) => ({ ...prev, event: e.target.value }))
+              setFormData((prev) => ({ ...prev, description: e.target.value }))
             }
-            placeholder="Enter notice event"
+            placeholder="Enter notice description"
             className="border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500"
           />
         </label>
@@ -887,7 +887,7 @@ function NoticePage({
             <div className="grid grid-cols-[140px_120px_minmax(0,1fr)_150px] border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold tracking-wide text-slate-600 uppercase">
               <div>Date</div>
               <div>Time</div>
-              <div>Event</div>
+              <div>Description</div>
               <div>Actions</div>
             </div>
             <div className="divide-y divide-slate-200">
@@ -900,7 +900,7 @@ function NoticePage({
                     {formatDisplayDate(notice.date)}
                   </div>
                   <div>{notice.time}</div>
-                  <div className="truncate">{notice.event}</div>
+                  <div className="truncate">{notice.description}</div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"

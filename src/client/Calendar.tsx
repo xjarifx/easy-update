@@ -80,7 +80,7 @@ type CalendarProps = {
   onCreateNotice: (notice: {
     date: string;
     time: string;
-    event: string;
+    description: string;
   }) => Promise<void>;
   onDeleteNotice: (id: number) => Promise<void>;
 };
@@ -105,7 +105,7 @@ export default function Calendar({
 
   const events: CalendarEvent[] = notices.map((notice) => ({
     id: String(notice.id),
-    title: notice.event,
+    title: notice.description,
     start: `${notice.date}T${notice.time}:00`,
   }));
 
@@ -146,7 +146,7 @@ export default function Calendar({
       await onCreateNotice({
         date: formData.date,
         time: formData.time,
-        event: formData.title.trim(),
+        description: formData.title.trim(),
       });
       setFormData({
         title: "",
