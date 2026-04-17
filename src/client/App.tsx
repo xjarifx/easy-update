@@ -442,8 +442,8 @@ function InputPage({
   }, []);
 
   return (
-    <section
-      className="neo-panel relative h-full overflow-hidden p-8"
+    <div
+      className="relative h-full overflow-hidden p-4 sm:p-6"
       onDragOver={(event) => {
         event.preventDefault();
       }}
@@ -452,8 +452,8 @@ function InputPage({
         handleFileUpload(event.dataTransfer.files);
       }}
     >
-      <div className="relative flex h-full min-h-0 flex-col gap-6">
-        <div className="min-h-0 flex-1 space-y-5">
+      <div className="mx-auto flex h-full min-h-0 max-w-5xl flex-col gap-4">
+        <div className="min-h-0 flex-1 space-y-4">
           <div className="space-y-4">
             <input
               ref={fileInputRef}
@@ -470,7 +470,7 @@ function InputPage({
                 onChange={(event) => setTextInput(event.target.value)}
                 placeholder="Paste a detailed event note, transcript, or schedule brief here."
                 rows={16}
-                className="min-h-88 w-full resize-y px-5 py-5 text-base leading-8"
+                className="min-h-88 w-full resize-y px-4 py-4 text-base leading-7"
               />
             </label>
 
@@ -551,12 +551,12 @@ function InputPage({
             </div>
 
             {processStatus ? (
-              <p className="text-sm leading-6 font-semibold">{processStatus}</p>
+              <p className="text-sm leading-6">{processStatus}</p>
             ) : null}
           </div>
 
           {recentEvents.length > 0 ? (
-            <div className="neo-bento p-5">
+            <div className="mt-6 space-y-3 border-t border-slate-200 pt-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="neo-label text-sm">Newly added events</p>
@@ -569,9 +569,12 @@ function InputPage({
                 <span className="neo-pill text-xs">{recentEvents.length}</span>
               </div>
 
-              <div className="mt-4 space-y-3">
+              <div className="space-y-3">
                 {recentEvents.map((event) => (
-                  <div key={event.id} className="neo-card px-4 py-3">
+                  <div
+                    key={event.id}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                  >
                     {editingRecentEventId === event.id ? (
                       <div className="space-y-3">
                         <label className="neo-label grid gap-1 text-xs tracking-wide uppercase">
@@ -673,7 +676,7 @@ function InputPage({
           ) : null}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -1027,15 +1030,17 @@ function NoticePage({
   };
 
   return (
-    <section className="neo-panel h-full p-8">
-      <h2 className="neo-label text-2xl">Notice</h2>
-      <p className="mt-1 text-sm font-semibold">
-        Create, edit, and delete notices backed by your database.
-      </p>
+    <div className="mx-auto flex h-full flex-col gap-4 overflow-auto p-4 sm:p-6">
+      <div>
+        <h2 className="neo-label text-2xl">Notice</h2>
+        <p className="mt-1 text-sm font-semibold">
+          Create, edit, and delete notices backed by your database.
+        </p>
+      </div>
 
       <form
         onSubmit={handleSubmit}
-        className="neo-bento mt-6 grid gap-4 p-6 md:grid-cols-[160px_140px_minmax(0,1fr)_auto]"
+        className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 md:grid-cols-[160px_140px_minmax(0,1fr)_auto]"
       >
         <label className="neo-label grid gap-1 text-sm">
           Date
@@ -1110,7 +1115,7 @@ function NoticePage({
         </div>
       </form>
 
-      <div className="mt-3 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <p className="neo-label text-xs">Total notices: {notices.length}</p>
         <button
           type="button"
@@ -1121,7 +1126,7 @@ function NoticePage({
         </button>
       </div>
 
-      <div className="mt-5">
+      <div>
         {isLoading ? (
           <p className="text-sm text-slate-500">Loading notices...</p>
         ) : error || actionError ? (
@@ -1134,8 +1139,8 @@ function NoticePage({
         ) : notices.length === 0 ? (
           <p className="text-sm text-slate-500">No notices available yet.</p>
         ) : (
-          <div className="neo-table overflow-hidden">
-            <div className="neo-table-header grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] px-4 py-4 text-xs tracking-wide uppercase">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] border-b border-slate-200 px-4 py-4 text-xs tracking-wide text-slate-500 uppercase">
               <div>Done</div>
               <div>Date</div>
               <div>Time</div>
@@ -1146,7 +1151,7 @@ function NoticePage({
               {sortedNoticesForDisplay.map((notice) => (
                 <div
                   key={notice.id}
-                  className="neo-table-row grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] items-center px-4 py-4 text-sm"
+                  className="grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] items-center border-b border-slate-100 px-4 py-4 text-sm last:border-b-0"
                 >
                   <div>
                     <label className="inline-flex items-center">
@@ -1194,7 +1199,7 @@ function NoticePage({
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -1372,20 +1377,28 @@ function SettingPage() {
   }, [apiKey, isHydrating, selectedModel]);
 
   return (
-    <section className="neo-panel h-full p-8">
-      <h2 className="neo-label text-2xl">Setting</h2>
-      <p className="mt-1 text-sm font-semibold">
-        Configure the OpenRouter API key and choose from the currently usable
-        free models.
-      </p>
-
-      <div className="mt-5 grid gap-3 text-sm">
-        <div className="neo-card p-3">Date format: DD-MMM-YYYY</div>
-        <div className="neo-card p-3">Time format: hh:mm AM/PM</div>
-        <div className="neo-card p-3">Font: SF Pro / Inter</div>
+    <div className="mx-auto flex h-full flex-col gap-4 overflow-auto p-4 sm:p-6">
+      <div>
+        <h2 className="neo-label text-2xl">Setting</h2>
+        <p className="mt-1 text-sm font-semibold">
+          Configure the OpenRouter API key and choose from the currently usable
+          free models.
+        </p>
       </div>
 
-      <div className="neo-bento mt-8 p-6">
+      <div className="grid gap-3 text-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+          Date format: DD-MMM-YYYY
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+          Time format: hh:mm AM/PM
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+          Font: SF Pro / Inter
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
         <h3 className="neo-label text-lg">API Key</h3>
         <p className="mt-1 text-sm font-semibold">
           Step 1: paste your OpenRouter API key. Step 2: load the free models
@@ -1396,7 +1409,7 @@ function SettingPage() {
         </p>
 
         <div className="mt-4 grid gap-4">
-          <div className="neo-card px-3 py-2 text-sm">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
             Provider: <span className="neo-label">OpenRouter</span>
             <span className="neo-pill ml-2 px-2 py-0.5 text-xs">
               free models only
@@ -1437,8 +1450,8 @@ function SettingPage() {
             </p>
           </div>
 
-          <div className="neo-card">
-            <div className="neo-table-header flex items-center justify-between px-3 py-2 text-xs">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 text-xs text-slate-500">
               <span>
                 {filteredModels.length} suggestion
                 {filteredModels.length === 1 ? "" : "s"}
@@ -1471,7 +1484,7 @@ function SettingPage() {
                         setSelectedModel(model);
                         setModelQuery(model);
                       }}
-                      className={`neo-divider flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition last:border-b-0 ${isSelected ? "neo-selected" : "neo-button-secondary"}`}
+                      className={`flex w-full items-center justify-between gap-3 border-b border-slate-100 px-3 py-2 text-left text-sm transition last:border-b-0 ${isSelected ? "bg-slate-100" : "hover:bg-slate-50"}`}
                     >
                       <span className="min-w-0 truncate font-medium">
                         {model}
@@ -1497,7 +1510,7 @@ function SettingPage() {
           {error ? <p className="text-xs text-red-600">{error}</p> : null}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -1664,7 +1677,7 @@ function App() {
           </nav>
         </aside>
 
-        <section className="min-w-0 overflow-auto p-6 md:p-9">
+        <section className="min-w-0 overflow-auto">
           <div className={activePage === "input" ? "block" : "hidden"}>
             <InputPage
               onEventsCreated={loadNotices}
