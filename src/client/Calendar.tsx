@@ -520,40 +520,37 @@ export default function Calendar({
                         event.completed
                           ? "border-emerald-200 bg-emerald-50/60"
                           : "border-slate-200 bg-white"
-                      }`}
+                      } grid gap-3`}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 space-y-1">
-                          <p className="text-xs text-slate-500">
-                            {formatEventLabel(event.start)}
-                          </p>
-                          <p
-                            className={`text-sm leading-snug font-semibold ${
-                              event.completed
-                                ? "text-slate-500 line-through"
-                                : "text-slate-900"
-                            }`}
-                          >
-                            {event.title}
-                          </p>
-                        </div>
-                        <label className="flex shrink-0 items-center gap-2 text-xs text-slate-600">
-                          <input
-                            type="checkbox"
-                            checked={event.completed}
-                            onChange={() => void toggleEventCompleted(event)}
-                            className="h-4 w-4"
-                            disabled={isUpdating}
-                            aria-label={
-                              event.completed
-                                ? "Mark event as incomplete"
-                                : "Mark event as complete"
-                            }
-                          />
-                          Complete
-                        </label>
+                      <div className="min-w-0">
+                        <p className="text-sm font-extrabold text-slate-900">
+                          {formatEventLabel(event.start)}
+                        </p>
                       </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <div className="min-w-0">
+                        <p
+                          className={`text-lg leading-snug font-semibold ${
+                            event.completed
+                              ? "text-slate-500 line-through"
+                              : "text-slate-900"
+                          }`}
+                        >
+                          {event.title}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={event.completed}
+                          onChange={() => void toggleEventCompleted(event)}
+                          className="h-5 w-5 shrink-0"
+                          disabled={isUpdating}
+                          aria-label={
+                            event.completed
+                              ? "Mark event as incomplete"
+                              : "Mark event as complete"
+                          }
+                        />
                         <button
                           type="button"
                           onClick={() => startEditEvent(event)}
@@ -565,7 +562,7 @@ export default function Calendar({
                         <button
                           type="button"
                           onClick={() => handleDeleteEvent(event.id)}
-                          className="neo-button-danger-ghost inline-flex items-center gap-1 px-3 py-1 text-xs"
+                          className="neo-button-danger inline-flex items-center gap-1 px-3 py-1 text-xs"
                         >
                           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                           Delete
