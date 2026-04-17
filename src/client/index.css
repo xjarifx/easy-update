@@ -428,29 +428,43 @@ button:disabled {
   color: #29445f !important;
 }
 
-.neo-app-shell section > div.block,
-.neo-app-shell section > div:not(.hidden) {
+.neo-page-stage {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+
+.neo-page-view {
+  min-height: 100%;
+  height: 100%;
+}
+
+.neo-page-enter {
   animation: page-enter 420ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
-.neo-app-shell .neo-card,
-.neo-app-shell .neo-panel,
-.neo-app-shell .neo-table,
-.neo-app-shell .fc,
-.neo-app-shell form {
-  animation: panel-enter 460ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+.neo-page-enter > * {
+  animation: panel-enter 480ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
-.neo-app-shell .neo-card:nth-of-type(2),
-.neo-app-shell .neo-panel:nth-of-type(2),
-.neo-app-shell .neo-table:nth-of-type(2) {
-  animation-delay: 70ms;
+.neo-page-enter > *:nth-child(1) {
+  animation-delay: 30ms;
 }
 
-.neo-app-shell .neo-card:nth-of-type(3),
-.neo-app-shell .neo-panel:nth-of-type(3),
-.neo-app-shell .neo-table:nth-of-type(3) {
-  animation-delay: 120ms;
+.neo-page-enter > *:nth-child(2) {
+  animation-delay: 100ms;
+}
+
+.neo-page-enter > *:nth-child(3) {
+  animation-delay: 150ms;
+}
+
+.neo-page-enter > *:nth-child(4) {
+  animation-delay: 200ms;
+}
+
+.neo-page-enter > *:nth-child(5) {
+  animation-delay: 240ms;
 }
 
 html,

@@ -1673,8 +1673,14 @@ function App() {
           </nav>
         </aside>
 
-        <section className="min-w-0 overflow-auto">
-          <div className={activePage === "input" ? "block" : "hidden"}>
+        <section className="neo-page-stage h-full min-h-0 min-w-0 overflow-auto">
+          <div
+            className={
+              activePage === "input"
+                ? "neo-page-view neo-page-enter block h-full min-h-0"
+                : "neo-page-view hidden h-full min-h-0"
+            }
+          >
             <InputPage
               onEventsCreated={loadNotices}
               onUpdateRecentEvent={updateNotice}
@@ -1682,26 +1688,34 @@ function App() {
             />
           </div>
           {activePage === "notice" && (
-            <NoticePage
-              notices={sortedNotices}
-              isLoading={isNoticesLoading}
-              error={noticesError}
-              onCreateNotice={createNotice}
-              onUpdateNotice={updateNotice}
-              onDeleteNotice={deleteNotice}
-            />
+            <div className="neo-page-view neo-page-enter h-full min-h-0">
+              <NoticePage
+                notices={sortedNotices}
+                isLoading={isNoticesLoading}
+                error={noticesError}
+                onCreateNotice={createNotice}
+                onUpdateNotice={updateNotice}
+                onDeleteNotice={deleteNotice}
+              />
+            </div>
           )}
           {activePage === "calendar" && (
-            <Calendar
-              notices={sortedNotices}
-              isLoading={isNoticesLoading}
-              error={noticesError}
-              onCreateNotice={createNotice}
-              onUpdateNotice={updateNotice}
-              onDeleteNotice={deleteNotice}
-            />
+            <div className="neo-page-view neo-page-enter h-full min-h-0">
+              <Calendar
+                notices={sortedNotices}
+                isLoading={isNoticesLoading}
+                error={noticesError}
+                onCreateNotice={createNotice}
+                onUpdateNotice={updateNotice}
+                onDeleteNotice={deleteNotice}
+              />
+            </div>
           )}
-          {activePage === "setting" && <SettingPage />}
+          {activePage === "setting" && (
+            <div className="neo-page-view neo-page-enter h-full min-h-0">
+              <SettingPage />
+            </div>
+          )}
         </section>
       </div>
     </main>
