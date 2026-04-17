@@ -465,7 +465,6 @@ function InputPage({
             />
 
             <label className="grid gap-2">
-              <span className="neo-label text-sm">Big input field</span>
               <textarea
                 value={textInput}
                 onChange={(event) => setTextInput(event.target.value)}
@@ -1635,7 +1634,6 @@ function App() {
       <div className="grid h-full w-full md:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="neo-sidebar h-full p-6">
           <h1 className="neo-label text-xl tracking-tight">Easy Update</h1>
-          <p className="neo-label mt-1 text-sm">Workspace</p>
           <div className="neo-pill mt-3 text-xs">
             <span
               className={`h-2 w-2 rounded-full ${

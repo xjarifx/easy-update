@@ -53,19 +53,6 @@ function formatEventLabel(value: string) {
   return `${formatDisplayDate(value)} 12:00 AM`;
 }
 
-function formatCalendarEventChip(start: Date | null, title: string) {
-  if (!start) {
-    return title;
-  }
-
-  const hours = start.getHours();
-  const minutes = String(start.getMinutes()).padStart(2, "0");
-  const suffix = hours >= 12 ? "pm" : "am";
-  const displayHour = hours % 12 || 12;
-
-  return `${displayHour}:${minutes}${suffix} ${title}`;
-}
-
 export interface CalendarEvent {
   title: string;
   start: string;
@@ -216,9 +203,12 @@ export default function Calendar({
               right: "dayGridMonth,timeGridWeek,timeGridDay",
             }}
             events={events}
-            eventContent={(arg) =>
-              formatCalendarEventChip(arg.event.start, arg.event.title)
-            }
+            dayMaxEvents={true}
+            eventTimeFormat={{
+              hour: "numeric",
+              minute: "2-digit",
+              meridiem: "short",
+            }}
             dateClick={handleDateClick}
             eventClick={handleEventClick}
             dayCellClassNames={(arg) =>

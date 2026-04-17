@@ -392,3 +392,20 @@ button:disabled {
   margin-top: 2px;
   margin-bottom: 2px;
 }
+
+.fc .fc-daygrid-event,
+.fc .fc-daygrid-dot-event {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.fc .fc-event-main-frame,
+.fc .fc-event-title-container,
+.fc .fc-event-title,
+.fc .fc-event-time {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
