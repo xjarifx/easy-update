@@ -63,7 +63,7 @@ function formatCalendarEventChip(start: Date | null, title: string) {
   const suffix = hours >= 12 ? "pm" : "am";
   const displayHour = hours % 12 || 12;
 
-  return `${displayHour}.${minutes}${suffix} ${title}`;
+  return `${displayHour}:${minutes}${suffix} ${title}`;
 }
 
 export interface CalendarEvent {
@@ -203,9 +203,9 @@ export default function Calendar({
   };
 
   return (
-    <div className="grid h-full min-h-0 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="grid h-full min-h-0 gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="flex min-h-0 flex-col gap-4">
-        <div className="min-h-0 flex-1 [&_.fc-button-primary]:border-blue-600 [&_.fc-button-primary]:bg-blue-600 [&_.fc-button-primary.fc-button-active]:bg-blue-800 [&_.fc-button-primary:hover]:bg-blue-700 [&_.fc-selected-day]:relative [&_.fc-selected-day]:bg-blue-100 [&_.fc-selected-day]:ring-2 [&_.fc-selected-day]:ring-blue-500 [&_.fc-selected-day]:ring-inset [&_.fc-selected-day_.fc-daygrid-day-number]:font-bold [&_.fc-selected-day_.fc-daygrid-day-number]:text-blue-700">
+        <div className="neo-panel [&_.fc-selected-day]:neo-selected min-h-0 flex-1 p-3 [&_.fc-selected-day]:relative [&_.fc-selected-day_.fc-daygrid-day-number]:font-black">
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -233,19 +233,19 @@ export default function Calendar({
 
       {/* Event List */}
       <aside className="h-full min-h-0">
-        <div className="flex h-full flex-col border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="neo-panel flex h-full flex-col p-6">
           <div className="mb-4 space-y-3">
             <button
               onClick={handleCreateEventClick}
-              className="w-full bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+              className="w-full px-4 py-2"
             >
               + Create Event
             </button>
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="neo-label text-lg">
               Events for {formatDisplayDate(selectedDate)}
             </h2>
             {isLoading ? (
-              <p className="text-sm text-slate-500">Loading events...</p>
+              <p className="text-sm font-semibold">Loading events...</p>
             ) : null}
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
             {submitError ? (
@@ -262,24 +262,24 @@ export default function Calendar({
           </div>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
             {selectedDayEvents.length === 0 ? (
-              <p className="text-slate-500">
+              <p className="text-sm font-semibold">
                 No events for this date yet. Click Create Event to add one.
               </p>
             ) : (
               selectedDayEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="flex items-center justify-between border border-slate-200 bg-blue-50 p-3"
+                  className="neo-card flex items-center justify-between p-3"
                 >
                   <div>
-                    <p className="font-medium text-slate-900">{event.title}</p>
-                    <p className="text-sm text-slate-600">
+                    <p className="neo-label">{event.title}</p>
+                    <p className="text-sm font-semibold">
                       {formatEventLabel(event.start)}
                     </p>
                   </div>
                   <button
                     onClick={() => handleDeleteEvent(event.id)}
-                    className="bg-red-500 px-3 py-1 text-sm font-medium text-white hover:bg-red-600"
+                    className="neo-button-danger-ghost px-2 py-0.5 text-xs"
                   >
                     Delete
                   </button>
@@ -292,14 +292,12 @@ export default function Calendar({
 
       {/* Add Event Modal */}
       {showModal && (
-        <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
-          <div className="w-full max-w-md bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-xl font-bold text-slate-900">Add Event</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4 backdrop-blur-sm">
+          <div className="neo-modal w-full max-w-md p-7">
+            <h2 className="neo-label mb-4 text-xl">Add Event</h2>
             <form onSubmit={handleAddEvent} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Event Title
-                </label>
+                <label className="neo-label block text-sm">Event Title</label>
                 <input
                   type="text"
                   value={formData.title}
@@ -307,40 +305,36 @@ export default function Calendar({
                     setFormData({ ...formData, title: e.target.value })
                   }
                   placeholder="Enter event title"
-                  className="mt-1 block w-full border border-slate-300 px-3 py-2 placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  className="mt-1 block w-full px-3 py-2"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Date
-                </label>
+                <label className="neo-label block text-sm">Date</label>
                 <input
                   type="date"
                   value={formData.date}
                   onChange={(e) =>
                     setFormData({ ...formData, date: e.target.value })
                   }
-                  className="mt-1 block w-full border border-slate-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  className="mt-1 block w-full px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Time
-                </label>
+                <label className="neo-label block text-sm">Time</label>
                 <input
                   type="time"
                   value={formData.time}
                   onChange={(e) =>
                     setFormData({ ...formData, time: e.target.value })
                   }
-                  className="mt-1 block w-full border border-slate-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  className="mt-1 block w-full px-3 py-2"
                 />
               </div>
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-slate-300"
+                  className="flex-1 px-4 py-2"
                   disabled={isSaving}
                 >
                   {isSaving ? "Saving..." : "Add Event"}
@@ -348,7 +342,7 @@ export default function Calendar({
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50"
+                  className="neo-button-secondary flex-1 px-4 py-2"
                 >
                   Cancel
                 </button>

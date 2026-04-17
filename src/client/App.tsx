@@ -443,7 +443,7 @@ function InputPage({
 
   return (
     <section
-      className="relative h-full overflow-hidden border border-slate-200 bg-white p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)]"
+      className="neo-panel relative h-full overflow-hidden p-8"
       onDragOver={(event) => {
         event.preventDefault();
       }}
@@ -452,8 +452,6 @@ function InputPage({
         handleFileUpload(event.dataTransfer.files);
       }}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_40%),radial-gradient(circle_at_top_left,rgba(14,165,233,0.14),transparent_35%)]" />
-
       <div className="relative flex h-full min-h-0 flex-col gap-6">
         <div className="min-h-0 flex-1 space-y-5">
           <div className="space-y-4">
@@ -467,15 +465,13 @@ function InputPage({
             />
 
             <label className="grid gap-2">
-              <span className="text-sm font-semibold text-slate-900">
-                Big input field
-              </span>
+              <span className="neo-label text-sm">Big input field</span>
               <textarea
                 value={textInput}
                 onChange={(event) => setTextInput(event.target.value)}
                 placeholder="Paste a detailed event note, transcript, or schedule brief here."
                 rows={16}
-                className="min-h-88 w-full resize-y rounded-4xl border border-slate-200 bg-white px-5 py-5 text-base leading-7 text-slate-900 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.45)] transition outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="min-h-88 w-full resize-y px-5 py-5 text-base leading-8"
               />
             </label>
 
@@ -484,7 +480,7 @@ function InputPage({
                 <button
                   type="button"
                   onClick={handleBrowseFiles}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                  className="inline-flex items-center gap-2 px-4 py-3 text-sm"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -506,12 +502,12 @@ function InputPage({
                   type="button"
                   onClick={handleVoiceModeToggle}
                   disabled={!isVoiceSupported}
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold shadow-sm transition ${
+                  className={`inline-flex items-center gap-2 px-4 py-3 text-sm ${
                     isListening
-                      ? "border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                      ? "bg-amber-300"
                       : isVoiceSupported
-                        ? "border border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50"
-                        : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                        ? ""
+                        : "cursor-not-allowed bg-zinc-300"
                   }`}
                 >
                   <svg
@@ -534,7 +530,7 @@ function InputPage({
                 <button
                   type="button"
                   onClick={clearAllInputs}
-                  className="rounded-full px-4 py-3 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                  className="neo-button-secondary px-4 py-3 text-sm"
                 >
                   Clear
                 </button>
@@ -543,11 +539,7 @@ function InputPage({
               <button
                 type="button"
                 onClick={isProcessing ? handleCancelProcess : handleProcess}
-                className={`inline-flex items-center justify-center rounded-full px-7 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_-18px_rgba(37,99,235,0.85)] transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
-                  isProcessing
-                    ? "bg-amber-600 hover:bg-amber-700"
-                    : "bg-blue-600 hover:bg-blue-700"
-                }`}
+                className={`inline-flex items-center justify-center px-7 py-3 text-sm ${isProcessing ? "neo-button-danger" : ""}`}
                 disabled={
                   !isProcessing &&
                   !textInput.trim() &&
@@ -560,39 +552,30 @@ function InputPage({
             </div>
 
             {processStatus ? (
-              <p className="text-sm leading-6 text-slate-600">
-                {processStatus}
-              </p>
+              <p className="text-sm leading-6 font-semibold">{processStatus}</p>
             ) : null}
           </div>
 
           {recentEvents.length > 0 ? (
-            <div className="rounded-[28px] border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+            <div className="neo-bento p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-emerald-950">
-                    Newly added events
-                  </p>
-                  <p className="text-xs text-emerald-700">
+                  <p className="neo-label text-sm">Newly added events</p>
+                  <p className="text-xs font-semibold">
                     {recentEvents.length} event
                     {recentEvents.length === 1 ? "" : "s"} created from the
                     latest process run.
                   </p>
                 </div>
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  {recentEvents.length}
-                </span>
+                <span className="neo-pill text-xs">{recentEvents.length}</span>
               </div>
 
               <div className="mt-4 space-y-3">
                 {recentEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm"
-                  >
+                  <div key={event.id} className="neo-card px-4 py-3">
                     {editingRecentEventId === event.id ? (
                       <div className="space-y-3">
-                        <label className="grid gap-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                        <label className="neo-label grid gap-1 text-xs tracking-wide uppercase">
                           Title
                           <input
                             type="text"
@@ -603,11 +586,11 @@ function InputPage({
                                 description: eventInput.target.value,
                               }))
                             }
-                            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            className="px-3 py-2 text-sm"
                           />
                         </label>
                         <div className="grid gap-2 sm:grid-cols-2">
-                          <label className="grid gap-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                          <label className="neo-label grid gap-1 text-xs tracking-wide uppercase">
                             Date
                             <input
                               type="date"
@@ -618,10 +601,10 @@ function InputPage({
                                   date: eventInput.target.value,
                                 }))
                               }
-                              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                              className="px-3 py-2 text-sm"
                             />
                           </label>
-                          <label className="grid gap-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                          <label className="neo-label grid gap-1 text-xs tracking-wide uppercase">
                             Time
                             <input
                               type="time"
@@ -632,7 +615,7 @@ function InputPage({
                                   time: eventInput.target.value,
                                 }))
                               }
-                              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                              className="px-3 py-2 text-sm"
                             />
                           </label>
                         </div>
@@ -640,14 +623,14 @@ function InputPage({
                           <button
                             type="button"
                             onClick={cancelRecentEventEdit}
-                            className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                            className="neo-button-secondary px-3 py-1.5 text-xs"
                           >
                             Cancel
                           </button>
                           <button
                             type="button"
                             onClick={() => void saveRecentEventEdit(event)}
-                            className="rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
+                            className="px-3 py-1.5 text-xs"
                           >
                             Save
                           </button>
@@ -656,10 +639,10 @@ function InputPage({
                     ) : (
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-slate-900">
+                          <p className="neo-label truncate text-sm">
                             {event.description}
                           </p>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-xs font-semibold">
                             {event.date} {event.time}
                           </p>
                         </div>
@@ -667,18 +650,18 @@ function InputPage({
                           <button
                             type="button"
                             onClick={() => startRecentEventEdit(event)}
-                            className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100"
+                            className="neo-button-secondary px-2.5 py-1 text-[11px]"
                           >
                             Edit
                           </button>
                           <button
                             type="button"
                             onClick={() => void deleteRecentEvent(event)}
-                            className="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-200"
+                            className="neo-button-danger-ghost px-2 py-0.5 text-[11px]"
                           >
                             Delete
                           </button>
-                          <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700">
+                          <span className="neo-pill shrink-0 px-2 py-1 text-[11px]">
                             Added
                           </span>
                         </div>
@@ -1045,17 +1028,17 @@ function NoticePage({
   };
 
   return (
-    <section className="h-full rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-2xl font-semibold text-slate-900">Notice</h2>
-      <p className="mt-1 text-sm text-slate-600">
+    <section className="neo-panel h-full p-8">
+      <h2 className="neo-label text-2xl">Notice</h2>
+      <p className="mt-1 text-sm font-semibold">
         Create, edit, and delete notices backed by your database.
       </p>
 
       <form
         onSubmit={handleSubmit}
-        className="mt-5 grid gap-3 border border-slate-200 bg-slate-50 p-4 md:grid-cols-[160px_140px_minmax(0,1fr)_auto]"
+        className="neo-bento mt-6 grid gap-4 p-6 md:grid-cols-[160px_140px_minmax(0,1fr)_auto]"
       >
-        <label className="grid gap-1 text-sm font-medium text-slate-700">
+        <label className="neo-label grid gap-1 text-sm">
           Date
           <input
             type="date"
@@ -1063,11 +1046,11 @@ function NoticePage({
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, date: e.target.value }))
             }
-            className="border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500"
+            className="px-3 py-2"
           />
         </label>
 
-        <label className="grid gap-1 text-sm font-medium text-slate-700">
+        <label className="neo-label grid gap-1 text-sm">
           Time
           <input
             type="time"
@@ -1075,11 +1058,11 @@ function NoticePage({
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, time: e.target.value }))
             }
-            className="border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500"
+            className="px-3 py-2"
           />
         </label>
 
-        <label className="grid gap-1 text-sm font-medium text-slate-700">
+        <label className="neo-label grid gap-1 text-sm">
           Description
           <input
             type="text"
@@ -1088,18 +1071,18 @@ function NoticePage({
               setFormData((prev) => ({ ...prev, description: e.target.value }))
             }
             placeholder="Enter notice description"
-            className="border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500"
+            className="px-3 py-2"
           />
         </label>
 
-        <label className="flex items-center gap-2 text-sm font-medium text-slate-700 md:col-span-4">
+        <label className="neo-label flex items-center gap-2 text-sm md:col-span-4">
           <input
             type="checkbox"
             checked={formData.completed}
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, completed: e.target.checked }))
             }
-            className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
+            className="h-4 w-4"
           />
           Completed
         </label>
@@ -1107,7 +1090,7 @@ function NoticePage({
         <div className="flex items-end gap-2 md:col-span-4">
           <button
             type="submit"
-            className="bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-slate-300"
+            className="px-4 py-2 text-sm"
             disabled={isSaving}
           >
             {isSaving
@@ -1120,7 +1103,7 @@ function NoticePage({
             <button
               type="button"
               onClick={resetForm}
-              className="border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className="neo-button-secondary px-4 py-2 text-sm"
             >
               Cancel
             </button>
@@ -1129,13 +1112,11 @@ function NoticePage({
       </form>
 
       <div className="mt-3 flex items-center justify-between">
-        <p className="text-xs text-slate-500">
-          Total notices: {notices.length}
-        </p>
+        <p className="neo-label text-xs">Total notices: {notices.length}</p>
         <button
           type="button"
           onClick={() => void onRefresh()}
-          className="border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+          className="neo-button-secondary px-3 py-1 text-xs"
         >
           Refresh
         </button>
@@ -1154,19 +1135,19 @@ function NoticePage({
         ) : notices.length === 0 ? (
           <p className="text-sm text-slate-500">No notices available yet.</p>
         ) : (
-          <div className="overflow-hidden border border-slate-200 bg-white">
-            <div className="grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+          <div className="neo-table overflow-hidden">
+            <div className="neo-table-header grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] px-4 py-4 text-xs tracking-wide uppercase">
               <div>Done</div>
               <div>Date</div>
               <div>Time</div>
               <div>Description</div>
               <div>Actions</div>
             </div>
-            <div className="divide-y divide-slate-200">
+            <div>
               {sortedNoticesForDisplay.map((notice) => (
                 <div
                   key={notice.id}
-                  className="grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] items-center px-4 py-3 text-sm text-slate-800"
+                  className="neo-table-row grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] items-center px-4 py-4 text-sm"
                 >
                   <div>
                     <label className="inline-flex items-center">
@@ -1174,7 +1155,7 @@ function NoticePage({
                         type="checkbox"
                         checked={notice.completed}
                         onChange={() => void handleToggleCompleted(notice)}
-                        className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4"
                         aria-label={`Mark notice ${notice.description} as ${
                           notice.completed ? "not completed" : "completed"
                         }`}
@@ -1196,14 +1177,14 @@ function NoticePage({
                     <button
                       type="button"
                       onClick={() => handleEdit(notice)}
-                      className="border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                      className="neo-button-secondary px-2 py-1 text-xs"
                     >
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => void handleDelete(notice)}
-                      className="bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700"
+                      className="neo-button-danger-ghost px-1.5 py-0.5 text-xs"
                     >
                       Delete
                     </button>
@@ -1392,56 +1373,49 @@ function SettingPage() {
   }, [apiKey, isHydrating, selectedModel]);
 
   return (
-    <section className="h-full border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-2xl font-semibold text-slate-900">Setting</h2>
-      <p className="mt-1 text-sm text-slate-600">
+    <section className="neo-panel h-full p-8">
+      <h2 className="neo-label text-2xl">Setting</h2>
+      <p className="mt-1 text-sm font-semibold">
         Configure the OpenRouter API key and choose from the currently usable
         free models.
       </p>
 
-      <div className="mt-5 grid gap-3 text-sm text-slate-800">
-        <div className="border border-slate-200 bg-slate-50 p-3">
-          Date format: DD-MMM-YYYY
-        </div>
-        <div className="border border-slate-200 bg-slate-50 p-3">
-          Time format: hh:mm AM/PM
-        </div>
-        <div className="border border-slate-200 bg-slate-50 p-3">
-          Font: JetBrains Mono
-        </div>
+      <div className="mt-5 grid gap-3 text-sm">
+        <div className="neo-card p-3">Date format: DD-MMM-YYYY</div>
+        <div className="neo-card p-3">Time format: hh:mm AM/PM</div>
+        <div className="neo-card p-3">Font: SF Pro / Inter</div>
       </div>
 
-      <div className="mt-8 border border-slate-200 bg-slate-50 p-4">
-        <h3 className="text-lg font-semibold text-slate-900">API Key</h3>
-        <p className="mt-1 text-sm text-slate-600">
+      <div className="neo-bento mt-8 p-6">
+        <h3 className="neo-label text-lg">API Key</h3>
+        <p className="mt-1 text-sm font-semibold">
           Step 1: paste your OpenRouter API key. Step 2: load the free models
           that key can use. Step 3: search and pick a model.
         </p>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs font-semibold">
           Model search runs automatically after you paste the API key.
         </p>
 
         <div className="mt-4 grid gap-4">
-          <div className="border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-            Provider:{" "}
-            <span className="font-semibold text-slate-900">OpenRouter</span>
-            <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+          <div className="neo-card px-3 py-2 text-sm">
+            Provider: <span className="neo-label">OpenRouter</span>
+            <span className="neo-pill ml-2 px-2 py-0.5 text-xs">
               free models only
             </span>
           </div>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <label className="neo-label grid gap-1 text-sm">
             API Key
             <input
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="sk-or-v1-..."
-              className="border border-slate-300 px-3 py-2 text-slate-900 ring-blue-500 outline-none focus:ring-2"
+              className="px-3 py-2"
             />
           </label>
 
-          <div className="grid gap-1 text-sm font-medium text-slate-700">
+          <div className="neo-label grid gap-1 text-sm">
             <label htmlFor="model-search">Search AI model</label>
             <input
               id="model-search"
@@ -1456,16 +1430,16 @@ function SettingPage() {
                 }
               }}
               placeholder="Search free OpenRouter models"
-              className="border border-slate-300 px-3 py-2 text-slate-900 ring-blue-500 outline-none focus:ring-2"
+              className="px-3 py-2"
             />
-            <p className="text-xs font-normal text-slate-500">
+            <p className="text-xs font-semibold">
               Search across the free OpenRouter model suggestions and click one
               to select it.
             </p>
           </div>
 
-          <div className="border border-slate-200 bg-white">
-            <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 text-xs text-slate-500">
+          <div className="neo-card">
+            <div className="neo-table-header flex items-center justify-between px-3 py-2 text-xs">
               <span>
                 {filteredModels.length} suggestion
                 {filteredModels.length === 1 ? "" : "s"}
@@ -1498,17 +1472,13 @@ function SettingPage() {
                         setSelectedModel(model);
                         setModelQuery(model);
                       }}
-                      className={`flex w-full items-center justify-between gap-3 border-b border-slate-100 px-3 py-2 text-left text-sm transition last:border-b-0 hover:bg-slate-50 ${
-                        isSelected
-                          ? "bg-blue-50 text-blue-900"
-                          : "text-slate-700"
-                      }`}
+                      className={`neo-divider flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition last:border-b-0 ${isSelected ? "neo-selected" : "neo-button-secondary"}`}
                     >
                       <span className="min-w-0 truncate font-medium">
                         {model}
                       </span>
                       {isSelected ? (
-                        <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                        <span className="neo-pill shrink-0 px-2 py-0.5 text-xs">
                           Selected
                         </span>
                       ) : null}
@@ -1661,14 +1631,12 @@ function App() {
   }, [loadNotices]);
 
   return (
-    <main className="h-screen w-screen overflow-hidden bg-slate-100">
+    <main className="neo-app-shell h-screen w-screen overflow-hidden">
       <div className="grid h-full w-full md:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="h-full border-r border-slate-200 bg-white p-4 shadow-sm">
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Easy Update
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">Workspace</p>
-          <div className="mt-3 inline-flex items-center gap-2 border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700">
+        <aside className="neo-sidebar h-full p-6">
+          <h1 className="neo-label text-xl tracking-tight">Easy Update</h1>
+          <p className="neo-label mt-1 text-sm">Workspace</p>
+          <div className="neo-pill mt-3 text-xs">
             <span
               className={`h-2 w-2 rounded-full ${
                 apiStatus === "online"
@@ -1686,10 +1654,10 @@ function App() {
               <button
                 key={item.id}
                 onClick={() => setActivePage(item.id)}
-                className={`px-3 py-2 text-left text-sm font-medium transition ${
+                className={`neo-nav-item px-3 py-2 text-left text-sm transition ${
                   activePage === item.id
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+                    ? "neo-nav-item-active"
+                    : "neo-button-secondary"
                 }`}
               >
                 {item.label}
@@ -1698,7 +1666,7 @@ function App() {
           </nav>
         </aside>
 
-        <section className="min-w-0 overflow-auto p-4 md:p-6">
+        <section className="min-w-0 overflow-auto p-6 md:p-9">
           <div className={activePage === "input" ? "block" : "hidden"}>
             <InputPage
               onEventsCreated={loadNotices}

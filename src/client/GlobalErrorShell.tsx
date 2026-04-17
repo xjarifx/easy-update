@@ -42,14 +42,14 @@ class GlobalErrorBoundary extends Component<BoundaryProps, BoundaryState> {
   render() {
     if (this.state.hasError) {
       return (
-        <main className="min-h-screen bg-slate-50 p-6">
-          <section className="mx-auto max-w-2xl border border-rose-300 bg-white p-6 shadow-sm">
-            <h1 className="text-xl font-semibold text-rose-700">
+        <main className="neo-app-shell min-h-screen p-6">
+          <section className="neo-panel mx-auto max-w-2xl p-6">
+            <h1 className="neo-label text-xl text-red-700">
               Application Error
             </h1>
-            <p className="mt-2 text-sm text-slate-700">{this.state.message}</p>
+            <p className="mt-2 text-sm font-semibold">{this.state.message}</p>
             <button
-              className="mt-5 border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-100"
+              className="mt-5 px-4 py-2 text-sm"
               onClick={() => window.location.reload()}
               type="button"
             >
@@ -100,11 +100,13 @@ export function GlobalErrorShell({ children }: BoundaryProps) {
   return (
     <>
       {runtimeMessage ? (
-        <div className="fixed inset-x-0 top-0 z-50 border-b border-rose-300 bg-rose-50 px-4 py-3 shadow-sm">
+        <div className="neo-panel fixed inset-x-0 top-0 z-50 border-x-0 border-t-0 px-4 py-3">
           <div className="mx-auto flex max-w-6xl items-start justify-between gap-4">
-            <p className="text-sm text-rose-800">{runtimeMessage}</p>
+            <p className="text-sm font-semibold text-red-700">
+              {runtimeMessage}
+            </p>
             <button
-              className="shrink-0 border border-rose-300 px-3 py-1 text-xs font-medium text-rose-800 hover:bg-rose-100"
+              className="neo-button-secondary shrink-0 px-3 py-1 text-xs"
               onClick={() => setRuntimeMessage(null)}
               type="button"
             >
