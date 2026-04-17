@@ -337,7 +337,7 @@ export default function Calendar({
               selectedDayEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="flex items-center justify-between border border-slate-200 bg-transparent p-3"
+                  className="border border-slate-200 bg-transparent p-3"
                 >
                   {editingEventId === event.id ? (
                     <div className="w-full space-y-3">
@@ -377,7 +377,7 @@ export default function Calendar({
                           className="px-3 py-2 text-sm"
                         />
                       </div>
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-start gap-2">
                         <button
                           type="button"
                           onClick={cancelEditEvent}
@@ -402,7 +402,7 @@ export default function Calendar({
                         {formatEventLabel(event.start)}
                       </p>
                       <p className="neo-label">{event.title}</p>
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-start gap-2">
                         <button
                           type="button"
                           onClick={() => startEditEvent(event)}
