@@ -1078,18 +1078,6 @@ function NoticePage({
           />
         </label>
 
-        <label className="neo-label flex items-center gap-2 text-sm md:col-span-4">
-          <input
-            type="checkbox"
-            checked={formData.completed}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, completed: e.target.checked }))
-            }
-            className="h-4 w-4"
-          />
-          Completed
-        </label>
-
         <div className="flex items-end gap-2 md:col-span-4">
           <button
             type="submit"
@@ -1116,13 +1104,6 @@ function NoticePage({
 
       <div className="flex items-center justify-between">
         <p className="neo-label text-xs">Total notices: {notices.length}</p>
-        <button
-          type="button"
-          onClick={() => void onRefresh()}
-          className="neo-button-secondary px-3 py-1 text-xs"
-        >
-          Refresh
-        </button>
       </div>
 
       <div>
