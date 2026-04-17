@@ -190,7 +190,7 @@ export default function Calendar({
   };
 
   return (
-    <div className="grid h-full min-h-0 gap-8 p-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="grid h-full min-h-0 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="[&_.fc-selected-day]:neo-selected min-h-0 flex-1 [&_.fc-selected-day]:relative [&_.fc-selected-day_.fc-daygrid-day-number]:font-black">
           <FullCalendar
