@@ -1383,9 +1383,11 @@ function NoticePage({
                     >
                       {notice.title}
                     </div>
+                  </div>
+                  <div className="min-w-0">
                     {notice.moreInfo ? (
                       <div
-                        className={`mt-1 truncate text-xs ${
+                        className={`truncate text-xs ${
                           notice.completed
                             ? "text-slate-300 line-through"
                             : "text-slate-500"
@@ -1393,7 +1395,9 @@ function NoticePage({
                       >
                         {notice.moreInfo}
                       </div>
-                    ) : null}
+                    ) : (
+                      <span className="text-xs text-slate-400">-</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
