@@ -334,7 +334,7 @@ export default function Calendar({
             >
               + Create Event
             </button>
-            <h2 className="neo-label text-lg">
+            <h2 className="neo-label text-lg mt-6">
               Events for {formatDisplayDate(selectedDate)}
             </h2>
             {isLoading ? (
