@@ -1,7 +1,9 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarClock,
   CalendarPlus,
+  ChevronLeft,
+  ChevronRight,
   CheckCircle2,
   Pencil,
   Trash2,
@@ -45,6 +47,8 @@ export interface CalendarEvent {
   completed: boolean;
 }
 
+type CalendarView = "dayGridMonth" | "timeGridWeek" | "timeGridDay";
+
 function splitEventStart(start: string) {
   const [datePart, timePart = "09:00"] = start.split("T");
   const normalizedTime = timePart.slice(0, 5);
@@ -77,10 +81,13 @@ export default function Calendar({
   onDeleteNotice,
 }: CalendarProps) {
   const config = useAppConfigSettings();
-  const calendarRef = useRef(null);
+  const calendarRef = useRef<FullCalendar | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [calendarView, setCalendarView] =
+    useState<CalendarView>("dayGridMonth");
+  const [calendarTitle, setCalendarTitle] = useState("");
   const [selectedDate, setSelectedDate] = useState<string>(getTodayLocalDate());
   const [formData, setFormData] = useState({
     title: "",
@@ -371,20 +378,99 @@ export default function Calendar({
     </span>
   );
 
+  useEffect(() => {
+    const calendarApi = calendarRef.current?.getApi();
+    if (!calendarApi) {
+      return;
+    }
+
+    if (calendarApi.view.type !== calendarView) {
+      calendarApi.changeView(calendarView);
+    }
+  }, [calendarView]);
+
+  const handleCalendarViewChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    setCalendarView(event.target.value as CalendarView);
+  };
+
+  const handleCalendarNav = (action: "prev" | "next" | "today") => {
+    const calendarApi = calendarRef.current?.getApi();
+    if (!calendarApi) {
+      return;
+    }
+
+    if (action === "prev") {
+      calendarApi.prev();
+      return;
+    }
+
+    if (action === "next") {
+      calendarApi.next();
+      return;
+    }
+
+    calendarApi.today();
+  };
+
   return (
     <div className="grid h-full min-h-0 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="flex min-h-0 flex-1 flex-col">
+        <div className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-3">
+          <div className="inline-flex">
+            <button
+              type="button"
+              onClick={() => handleCalendarNav("prev")}
+              className="inline-flex h-10 w-10 items-center justify-center border border-slate-300 bg-white/70 text-black"
+              style={{ color: "#000" }}
+              aria-label="Previous period"
+            >
+              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCalendarNav("next")}
+              className="inline-flex h-10 w-10 items-center justify-center border border-l-0 border-slate-300 bg-white/70 text-black"
+              style={{ color: "#000" }}
+              aria-label="Next period"
+            >
+              <ChevronRight className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCalendarNav("today")}
+              className="inline-flex h-10 items-center justify-center border border-l-0 border-slate-300 bg-white/70 px-4 text-sm font-semibold text-black"
+              style={{ color: "#000" }}
+            >
+              today
+            </button>
+          </div>
+
+          <h2 className="text-center text-4xl font-black tracking-tight text-slate-900">
+            {calendarTitle}
+          </h2>
+
+          <div className="justify-self-end">
+            <select
+              value={calendarView}
+              onChange={handleCalendarViewChange}
+              className="px-2 py-1.5 text-sm text-black"
+              aria-label="Select calendar view"
+            >
+              <option value="dayGridMonth">Month</option>
+              <option value="timeGridWeek">Week</option>
+              <option value="timeGridDay">Day</option>
+            </select>
+          </div>
+        </div>
         <div className="[&_.fc-selected-day]:neo-selected min-h-0 flex-1 [&_.fc-selected-day]:relative [&_.fc-selected-day_.fc-daygrid-day-number]:font-black">
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
+            initialView={calendarView}
             firstDay={config.firstDayOfWeek}
-            headerToolbar={{
-              left: "prev,next today",
-              center: "title",
-              right: "dayGridMonth,timeGridWeek,timeGridDay",
-            }}
+            headerToolbar={false}
             events={events}
             dayMaxEvents={true}
             eventTimeFormat={{
@@ -393,6 +479,7 @@ export default function Calendar({
               meridiem: "short",
             }}
             eventContent={renderEventContent}
+            datesSet={(arg) => setCalendarTitle(arg.view.title)}
             dateClick={handleDateClick}
             eventClick={handleEventClick}
             dayCellClassNames={(arg) =>
