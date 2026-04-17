@@ -5,10 +5,12 @@ export type NoticeItem = {
   date: string;
   time: string;
   description: string;
+  completed: boolean;
 };
 
 export type NoticeMutationInput = {
   date: string;
   time: string;
   description: string;
+  completed?: boolean;
 };

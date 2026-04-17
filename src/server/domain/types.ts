@@ -12,12 +12,14 @@ export type NoticeRecord = {
   date: string;
   time: string;
   description: string;
+  completed: boolean;
 };
 
 export type NoticeMutationInput = {
   date: string;
   time: string;
   description: string;
+  completed?: boolean;
 };
 
 export type ExtractedEvent = {

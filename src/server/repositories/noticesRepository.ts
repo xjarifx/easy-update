@@ -1,4 +1,4 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { noticesTable } from "../db/schema.js";
 import type { NoticeRecord } from "../domain/types.js";
@@ -33,10 +33,31 @@ export const findNoticeById = async (id: number) => {
   return (notice as NoticeRecord | undefined) ?? null;
 };
 
+export const findNoticeByExactFields = async (input: {
+  date: string;
+  time: string;
+  description: string;
+}) => {
+  const [notice] = await db
+    .select()
+    .from(noticesTable)
+    .where(
+      and(
+        eq(noticesTable.date, input.date),
+        eq(noticesTable.time, input.time),
+        eq(noticesTable.description, input.description),
+      ),
+    )
+    .limit(1);
+
+  return (notice as NoticeRecord | undefined) ?? null;
+};
+
 export const createNotice = async (input: {
   date: string;
   time: string;
   description: string;
+  completed: boolean;
 }) => {
   const [notice] = await db.insert(noticesTable).values(input).returning();
 
@@ -44,7 +65,12 @@ export const createNotice = async (input: {
 };
 
 export const createManyNotices = async (
-  values: Array<{ date: string; time: string; description: string }>,
+  values: Array<{
+    date: string;
+    time: string;
+    description: string;
+    completed: boolean;
+  }>,
 ) => {
   if (values.length === 0) {
     return [] as NoticeRecord[];
@@ -61,6 +87,7 @@ export const updateNotice = async (
     date: string;
     time: string;
     description: string;
+    completed: boolean;
   },
 ) => {
   const [notice] = await db

@@ -45,7 +45,10 @@ noticesRouter.post(
     const result = await createNoticeFromInput(req.body ?? {});
 
     if ("error" in result) {
-      throw new ValidationError(result.error);
+      const status = result.status ?? 400;
+      const error = new ValidationError(result.error);
+      error.statusCode = status;
+      throw error;
     }
 
     res.status(201).json({ data: result.value });

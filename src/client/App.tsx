@@ -30,9 +30,22 @@ type SavedApiSettings = {
 };
 
 const SETTINGS_STORAGE_KEY = "easy-update.settings.v1";
+const ACTIVE_PAGE_STORAGE_KEY = "easy-update.active-page.v1";
 const ENCRYPTION_SECRET_KEY = "easy-update.settings.secret";
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
+
+const validPages: Page[] = ["input", "notice", "calendar", "setting"];
+
+function readSavedActivePage() {
+  const storedPage = window.localStorage.getItem(ACTIVE_PAGE_STORAGE_KEY);
+
+  if (storedPage && validPages.includes(storedPage as Page)) {
+    return storedPage as Page;
+  }
+
+  return "calendar";
+}
 
 function bytesToBase64(bytes: Uint8Array) {
   let binary = "";
@@ -129,7 +142,11 @@ async function saveEncryptedSettings(settings: {
   window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(payload));
 }
 
-function InputPage() {
+type InputPageProps = {
+  onEventsCreated?: () => Promise<void> | void;
+};
+
+function InputPage({ onEventsCreated }: InputPageProps) {
   const [textInput, setTextInput] = useState("");
   const [documents, setDocuments] = useState<File[]>([]);
   const [images, setImages] = useState<File[]>([]);
@@ -211,6 +228,10 @@ function InputPage() {
       setProcessStatus(
         `Created ${createdCount} event${createdCount === 1 ? "" : "s"}.`,
       );
+
+      if (createdCount > 0) {
+        await onEventsCreated?.();
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to process text.";
@@ -664,6 +685,67 @@ function formatNoticeDate(value: string) {
   return `${parts.day.toString().padStart(2, "0")}-${month}-${parts.year}`;
 }
 
+function parseNoticeTimeParts(value: string) {
+  const trimmed = value.trim();
+  const timeMatch = trimmed.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
+
+  if (!timeMatch) {
+    return null;
+  }
+
+  const hour = Number(timeMatch[1]);
+  const minute = Number(timeMatch[2]);
+  const second = Number(timeMatch[3] ?? "0");
+
+  if (
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59 ||
+    second < 0 ||
+    second > 59
+  ) {
+    return null;
+  }
+
+  return { hour, minute, second };
+}
+
+function toNoticeSortTimestamp(notice: NoticeItem) {
+  const dateParts = parseNoticeDateParts(notice.date);
+  const timeParts = parseNoticeTimeParts(notice.time);
+
+  if (!dateParts || !timeParts) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  if (!isValidNoticeDate(dateParts.year, dateParts.month, dateParts.day)) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return new Date(
+    dateParts.year,
+    dateParts.month - 1,
+    dateParts.day,
+    timeParts.hour,
+    timeParts.minute,
+    timeParts.second,
+  ).getTime();
+}
+
+function sortNoticesAsc(notices: NoticeItem[]) {
+  return [...notices].sort((a, b) => {
+    const aTimestamp = toNoticeSortTimestamp(a);
+    const bTimestamp = toNoticeSortTimestamp(b);
+
+    if (aTimestamp !== bTimestamp) {
+      return aTimestamp - bTimestamp;
+    }
+
+    return a.id - b.id;
+  });
+}
+
 type NoticePageProps = {
   notices: NoticeItem[];
   isLoading: boolean;
@@ -690,7 +772,12 @@ function NoticePage({
     date: getTodayLocalDate(),
     time: "09:00",
     description: "",
+    completed: false,
   });
+  const sortedNoticesForDisplay = useMemo(
+    () => sortNoticesAsc(notices),
+    [notices],
+  );
 
   const formatDisplayDate = (value: Date | string) => {
     if (value instanceof Date) {
@@ -709,6 +796,7 @@ function NoticePage({
       date: getTodayLocalDate(),
       time: "09:00",
       description: "",
+      completed: false,
     });
     setEditingNoticeId(null);
     setActionError("");
@@ -731,12 +819,14 @@ function NoticePage({
           date: formData.date,
           time: formData.time,
           description: formData.description.trim(),
+          completed: formData.completed,
         });
       } else {
         await onUpdateNotice(editingNoticeId, {
           date: formData.date,
           time: formData.time,
           description: formData.description.trim(),
+          completed: formData.completed,
         });
       }
 
@@ -756,8 +846,32 @@ function NoticePage({
       date: notice.date,
       time: notice.time,
       description: notice.description,
+      completed: notice.completed,
     });
     setActionError("");
+  };
+
+  const handleToggleCompleted = async (notice: NoticeItem) => {
+    try {
+      setActionError("");
+      await onUpdateNotice(notice.id, {
+        date: notice.date,
+        time: notice.time,
+        description: notice.description,
+        completed: !notice.completed,
+      });
+
+      if (editingNoticeId === notice.id) {
+        setFormData((prev) => ({
+          ...prev,
+          completed: !notice.completed,
+        }));
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to update notice.";
+      setActionError(message);
+    }
   };
 
   const handleDelete = async (notice: NoticeItem) => {
@@ -831,7 +945,19 @@ function NoticePage({
           />
         </label>
 
-        <div className="flex items-end gap-2">
+        <label className="flex items-center gap-2 text-sm font-medium text-slate-700 md:col-span-4">
+          <input
+            type="checkbox"
+            checked={formData.completed}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, completed: e.target.checked }))
+            }
+            className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
+          />
+          Completed
+        </label>
+
+        <div className="flex items-end gap-2 md:col-span-4">
           <button
             type="submit"
             className="bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-slate-300"
@@ -882,23 +1008,43 @@ function NoticePage({
           <p className="text-sm text-slate-500">No notices available yet.</p>
         ) : (
           <div className="overflow-hidden border border-slate-200 bg-white">
-            <div className="grid grid-cols-[140px_120px_minmax(0,1fr)_150px] border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+            <div className="grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+              <div>Done</div>
               <div>Date</div>
               <div>Time</div>
               <div>Description</div>
               <div>Actions</div>
             </div>
             <div className="divide-y divide-slate-200">
-              {notices.map((notice) => (
+              {sortedNoticesForDisplay.map((notice) => (
                 <div
                   key={notice.id}
-                  className="grid grid-cols-[140px_120px_minmax(0,1fr)_150px] items-center px-4 py-3 text-sm text-slate-800"
+                  className="grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] items-center px-4 py-3 text-sm text-slate-800"
                 >
+                  <div>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={notice.completed}
+                        onChange={() => void handleToggleCompleted(notice)}
+                        className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
+                        aria-label={`Mark notice ${notice.description} as ${
+                          notice.completed ? "not completed" : "completed"
+                        }`}
+                      />
+                    </label>
+                  </div>
                   <div className="font-medium text-slate-900">
                     {formatDisplayDate(notice.date)}
                   </div>
                   <div>{notice.time}</div>
-                  <div className="truncate">{notice.description}</div>
+                  <div
+                    className={`truncate ${
+                      notice.completed ? "text-slate-400 line-through" : ""
+                    }`}
+                  >
+                    {notice.description}
+                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -1240,13 +1386,16 @@ function SettingPage() {
 }
 
 function App() {
-  const [activePage, setActivePage] = useState<Page>("calendar");
+  const [activePage, setActivePage] = useState<Page>(() =>
+    readSavedActivePage(),
+  );
   const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">(
     "checking",
   );
   const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [isNoticesLoading, setIsNoticesLoading] = useState(true);
   const [noticesError, setNoticesError] = useState("");
+  const sortedNotices = useMemo(() => sortNoticesAsc(notices), [notices]);
 
   const navItems: { id: Page; label: string }[] = [
     { id: "input", label: "Input" },
@@ -1254,6 +1403,10 @@ function App() {
     { id: "calendar", label: "Calendar" },
     { id: "setting", label: "Setting" },
   ];
+
+  useEffect(() => {
+    window.localStorage.setItem(ACTIVE_PAGE_STORAGE_KEY, activePage);
+  }, [activePage]);
 
   const loadNotices = useCallback(
     async (options?: { background?: boolean }) => {
@@ -1266,7 +1419,7 @@ function App() {
         setNoticesError("");
 
         const noticeData = await fetchNotices();
-        setNotices(noticeData ?? []);
+        setNotices(sortNoticesAsc(noticeData ?? []));
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to load notices.";
@@ -1400,11 +1553,11 @@ function App() {
 
         <section className="min-w-0 overflow-auto p-4 md:p-6">
           <div className={activePage === "input" ? "block" : "hidden"}>
-            <InputPage />
+            <InputPage onEventsCreated={loadNotices} />
           </div>
           {activePage === "notice" && (
             <NoticePage
-              notices={notices}
+              notices={sortedNotices}
               isLoading={isNoticesLoading}
               error={noticesError}
               onRefresh={loadNotices}
@@ -1415,7 +1568,7 @@ function App() {
           )}
           {activePage === "calendar" && (
             <Calendar
-              notices={notices}
+              notices={sortedNotices}
               isLoading={isNoticesLoading}
               error={noticesError}
               onCreateNotice={createNotice}

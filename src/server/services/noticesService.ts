@@ -2,6 +2,7 @@ import {
   createManyNotices,
   createNotice,
   deleteNotice,
+  findNoticeByExactFields,
   findNoticeById,
   listNotices,
   updateNotice,
@@ -20,6 +21,7 @@ type NormalizedNoticeInput = {
   date: string;
   time: string;
   description: string;
+  completed: boolean;
 };
 
 type NoticeInputValidationResult =
@@ -101,6 +103,7 @@ const normalizeNoticeInput = (
       date: normalizedDate,
       time: normalizedTime,
       description: input.description.trim(),
+      completed: typeof input.completed === "boolean" ? input.completed : false,
     },
   } as const;
 };
@@ -122,6 +125,20 @@ export const createNoticeFromInput = async (
     };
   }
 
+  const duplicate = await findNoticeByExactFields({
+    date: normalized.value.date,
+    time: normalized.value.time,
+    description: normalized.value.description,
+  });
+
+  if (duplicate) {
+    return {
+      error:
+        "Duplicate notice already exists for the same date, time, and description.",
+      status: 409,
+    };
+  }
+
   const created = await createNotice(normalized.value);
 
   return { value: normalizeNotice(created) } as NoticeMutationResult;
@@ -135,6 +152,20 @@ export const updateNoticeFromInput = async (
 
   if ("error" in normalized) {
     return normalized;
+  }
+
+  const duplicate = await findNoticeByExactFields({
+    date: normalized.value.date,
+    time: normalized.value.time,
+    description: normalized.value.description,
+  });
+
+  if (duplicate && duplicate.id !== id) {
+    return {
+      error:
+        "Duplicate notice already exists for the same date, time, and description.",
+      status: 409,
+    };
   }
 
   const updated = await updateNotice(id, normalized.value);
@@ -169,6 +200,7 @@ export const createNoticesFromExtractedEvents = async (
       date: event.date,
       time: event.time,
       description: event.title,
+      completed: false,
     };
 
     // Validate using the same pipeline as manual events

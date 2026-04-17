@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -125,8 +125,21 @@ export default function Calendar({
     setFormData((prev) => ({ ...prev, date: selectedDateStr }));
   };
 
-  const selectedDayEvents = events.filter(
-    (event) => event.start.split("T")[0] === selectedDate,
+  const selectedDayEvents = useMemo(
+    () =>
+      events
+        .filter((event) => event.start.split("T")[0] === selectedDate)
+        .sort((a, b) => {
+          const aTime = new Date(a.start).getTime();
+          const bTime = new Date(b.start).getTime();
+
+          if (aTime !== bTime) {
+            return aTime - bTime;
+          }
+
+          return Number(a.id) - Number(b.id);
+        }),
+    [events, selectedDate],
   );
   const isPastDateWarning = submitError
     .toLowerCase()

@@ -2,7 +2,9 @@ import { apiRequest } from "./http";
 import type { NoticeItem, NoticeMutationInput } from "../types/domain";
 
 export const fetchNotices = () => {
-  return apiRequest<NoticeItem[]>("/api/notices");
+  return apiRequest<NoticeItem[]>("/api/notices", {
+    cache: "no-store",
+  });
 };
 
 export const createNotice = (notice: NoticeMutationInput) => {
