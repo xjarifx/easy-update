@@ -5,6 +5,8 @@ import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import type { EventContentArg } from "@fullcalendar/core";
 import type { NoticeItem, NoticeMutationInput } from "./types/domain";
+import { useAppConfigSettings } from "./config/AppConfigContext";
+import { formatDate, formatTime, TimeFormat } from "./config/appConfig";
 
 function formatLocalDate(date: Date) {
   const year = date.getFullYear();
@@ -24,48 +26,6 @@ function parseEventDate(value: Date | string) {
   }
 
   return new Date(value.includes("T") ? value : `${value}T00:00:00`);
-}
-
-function formatDisplayDate(value: Date | string) {
-  const date = parseEventDate(value);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = date.toLocaleString("en-US", { month: "short" });
-  const year = date.getFullYear();
-
-  return `${day}-${month}-${year}`;
-}
-
-function formatDisplayTime(value: Date | string) {
-  const date = parseEventDate(value);
-
-  return date.toLocaleString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
-
-function formatEventLabel(value: string) {
-  if (value.includes("T")) {
-    const date = new Date(value);
-    return `${formatDisplayDate(date)} ${formatDisplayTime(date)}`;
-  }
-
-  return `${formatDisplayDate(value)} 12:00 AM`;
-}
-
-function formatCalendarEventTime(value: string) {
-  const date = parseEventDate(value);
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const meridiem = hours >= 12 ? "pm" : "am";
-  const normalizedHour = hours % 12 === 0 ? 12 : hours % 12;
-
-  if (minutes === 0) {
-    return `${normalizedHour}${meridiem}`;
-  }
-
-  return `${normalizedHour}:${String(minutes).padStart(2, "0")}${meridiem}`;
 }
 
 export interface CalendarEvent {
@@ -106,6 +66,7 @@ export default function Calendar({
   onUpdateNotice,
   onDeleteNotice,
 }: CalendarProps) {
+  const config = useAppConfigSettings();
   const calendarRef = useRef(null);
   const [isSaving, setIsSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -123,6 +84,48 @@ export default function Calendar({
     time: "09:00",
   });
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Formatting functions that use config
+  const formatDisplayDate = (value: Date | string) => {
+    const date = parseEventDate(value);
+    return formatDate(date, config.dateFormat);
+  };
+
+  const formatDisplayTime = (value: Date | string) => {
+    const date = parseEventDate(value);
+    return formatTime(date, config.timeFormat);
+  };
+
+  const formatEventLabel = (value: string) => {
+    if (value.includes("T")) {
+      const date = new Date(value);
+      return `${formatDisplayDate(date)} ${formatDisplayTime(date)}`;
+    }
+
+    return `${formatDisplayDate(value)} ${formatDisplayTime(new Date(`${value}T12:00:00`))}`;
+  };
+
+  const formatCalendarEventTime = (value: string) => {
+    const date = parseEventDate(value);
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+
+    if (config.timeFormat === TimeFormat.TWENTY_FOUR_HOUR) {
+      if (minutes === 0) {
+        return `${hours}:00`;
+      }
+      return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    } else {
+      const meridiem = hours >= 12 ? "pm" : "am";
+      const normalizedHour = hours % 12 === 0 ? 12 : hours % 12;
+
+      if (minutes === 0) {
+        return `${normalizedHour}${meridiem}`;
+      }
+
+      return `${normalizedHour}:${String(minutes).padStart(2, "0")}${meridiem}`;
+    }
+  };
 
   const events: CalendarEvent[] = notices.map((notice) => ({
     id: String(notice.id),
@@ -334,7 +337,7 @@ export default function Calendar({
             >
               + Create Event
             </button>
-            <h2 className="neo-label text-lg mt-6">
+            <h2 className="neo-label mt-6 text-lg">
               Events for {formatDisplayDate(selectedDate)}
             </h2>
             {isLoading ? (

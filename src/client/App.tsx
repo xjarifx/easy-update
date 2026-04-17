@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Calendar from "./Calendar";
+import { SettingsPanel } from "./SettingsPanel";
 import { apiRequest } from "./api/http";
 import { extractAndCreateEvents } from "./api/events";
 import { fetchProviderModels } from "./api/providers";
@@ -14,6 +15,8 @@ import type {
   NoticeMutationInput,
   ProviderId,
 } from "./types/domain";
+import { useAppConfigSettings } from "./config/AppConfigContext";
+import { formatDate, formatTime } from "./config/appConfig";
 import "./App.css";
 
 type Page = "input" | "notice" | "calendar" | "setting";
@@ -156,6 +159,7 @@ function InputPage({
   onUpdateRecentEvent,
   onDeleteRecentEvent,
 }: InputPageProps) {
+  const config = useAppConfigSettings();
   const [textInput, setTextInput] = useState("");
   const [documents, setDocuments] = useState<File[]>([]);
   const [images, setImages] = useState<File[]>([]);
@@ -644,7 +648,11 @@ function InputPage({
                             {event.description}
                           </p>
                           <p className="mt-1 text-xs font-semibold">
-                            {event.date} {event.time}
+                            {formatDate(event.date, config.dateFormat)}{" "}
+                            {formatTime(
+                              event.date + "T" + event.time,
+                              config.timeFormat,
+                            )}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -895,6 +903,7 @@ function NoticePage({
   onDeleteNotice,
 }: NoticePageProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const config = useAppConfigSettings();
   const [editingNoticeId, setEditingNoticeId] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
   const [formData, setFormData] = useState({
@@ -1147,7 +1156,12 @@ function NoticePage({
                   <div className="font-medium text-slate-900">
                     {formatDisplayDate(notice.date)}
                   </div>
-                  <div>{notice.time}</div>
+                  <div>
+                    {formatTime(
+                      notice.date + "T" + notice.time,
+                      config.timeFormat,
+                    )}
+                  </div>
                   <div
                     className={`truncate ${
                       notice.completed ? "text-slate-400 line-through" : ""
@@ -1355,137 +1369,135 @@ function SettingPage() {
   }, [apiKey, isHydrating, selectedModel]);
 
   return (
-    <div className="mx-auto flex h-full flex-col gap-4 overflow-auto p-4 sm:p-6">
-      <div>
-        <h2 className="neo-label text-2xl">Setting</h2>
-        <p className="mt-1 text-sm font-semibold">
-          Configure the OpenRouter API key and choose from the currently usable
-          free models.
-        </p>
-      </div>
-
-      <div className="grid gap-3 text-sm">
-        <div className="border border-slate-200 bg-white p-3">
-          Date format: DD-MMM-YYYY
+    <div className="mx-auto flex h-full flex-col gap-0 overflow-auto sm:gap-0">
+      <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-2">
+        {/* App Configuration */}
+        <div className="overflow-auto border-r border-slate-200">
+          <SettingsPanel />
         </div>
-        <div className="border border-slate-200 bg-white p-3">
-          Time format: hh:mm AM/PM
-        </div>
-        <div className="border border-slate-200 bg-white p-3">
-          Font: SF Pro / Inter
-        </div>
-      </div>
 
-      <div className="border border-slate-200 bg-white p-5">
-        <h3 className="neo-label text-lg">API Key</h3>
-        <p className="mt-1 text-sm font-semibold">
-          Step 1: paste your OpenRouter API key. Step 2: load the free models
-          that key can use. Step 3: search and pick a model.
-        </p>
-        <p className="mt-1 text-xs font-semibold">
-          Model search runs automatically after you paste the API key.
-        </p>
-
-        <div className="mt-4 grid gap-4">
-          <div className="border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-            Provider: <span className="neo-label">OpenRouter</span>
-            <span className="neo-pill ml-2 px-2 py-0.5 text-xs">
-              free models only
-            </span>
-          </div>
-
-          <label className="neo-label grid gap-1 text-sm">
-            API Key
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="sk-or-v1-..."
-              className="px-3 py-2"
-            />
-          </label>
-
-          <div className="neo-label grid gap-1 text-sm">
-            <label htmlFor="model-search">Search AI model</label>
-            <input
-              id="model-search"
-              type="search"
-              value={modelQuery}
-              onChange={(e) => setModelQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && filteredModels[0]) {
-                  e.preventDefault();
-                  setSelectedModel(filteredModels[0]);
-                  setModelQuery(filteredModels[0]);
-                }
-              }}
-              placeholder="Search free OpenRouter models"
-              className="px-3 py-2"
-            />
-            <p className="text-xs font-semibold">
-              Search across the free OpenRouter model suggestions and click one
-              to select it.
+        {/* API Settings */}
+        <div className="overflow-auto p-4 sm:p-6">
+          <div>
+            <h2 className="neo-label text-2xl">API Configuration</h2>
+            <p className="mt-1 text-sm font-semibold">
+              Configure the OpenRouter API key and choose from the currently
+              usable free models.
             </p>
           </div>
 
-          <div className="overflow-hidden border border-slate-200 bg-white">
-            <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 text-xs text-slate-500">
-              <span>
-                {filteredModels.length} suggestion
-                {filteredModels.length === 1 ? "" : "s"}
-              </span>
-              <span>
-                {selectedModel
-                  ? `Selected: ${selectedModel}`
-                  : "No model selected"}
-              </span>
-            </div>
+          <div className="mt-6 border border-slate-200 bg-white p-5">
+            <h3 className="neo-label text-lg">API Key</h3>
+            <p className="mt-1 text-sm font-semibold">
+              Step 1: paste your OpenRouter API key. Step 2: load the free
+              models that key can use. Step 3: search and pick a model.
+            </p>
+            <p className="mt-1 text-xs font-semibold">
+              Model search runs automatically after you paste the API key.
+            </p>
 
-            <div className="max-h-72 overflow-auto">
-              {availableModels.length === 0 ? (
-                <div className="px-3 py-4 text-sm text-slate-500">
-                  No models loaded yet.
-                </div>
-              ) : filteredModels.length === 0 ? (
-                <div className="px-3 py-4 text-sm text-slate-500">
-                  No free OpenRouter models match your search.
-                </div>
-              ) : (
-                filteredModels.slice(0, 50).map((model) => {
-                  const isSelected = model === selectedModel;
+            <div className="mt-4 grid gap-4">
+              <div className="border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                Provider: <span className="neo-label">OpenRouter</span>
+                <span className="neo-pill ml-2 px-2 py-0.5 text-xs">
+                  free models only
+                </span>
+              </div>
 
-                  return (
-                    <button
-                      key={model}
-                      type="button"
-                      onClick={() => {
-                        setSelectedModel(model);
-                        setModelQuery(model);
-                      }}
-                      className={`flex w-full items-center justify-between gap-3 border-b border-slate-100 px-3 py-2 text-left text-sm transition last:border-b-0 ${isSelected ? "bg-slate-100" : "hover:bg-slate-50"}`}
-                    >
-                      <span className="min-w-0 truncate font-medium">
-                        {model}
-                      </span>
-                      {isSelected ? (
-                        <span className="neo-pill shrink-0 px-2 py-0.5 text-xs">
-                          Selected
-                        </span>
-                      ) : null}
-                    </button>
-                  );
-                })
-              )}
+              <label className="neo-label grid gap-1 text-sm">
+                API Key
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="sk-or-v1-..."
+                  className="px-3 py-2"
+                />
+              </label>
+
+              <div className="neo-label grid gap-1 text-sm">
+                <label htmlFor="model-search">Search AI model</label>
+                <input
+                  id="model-search"
+                  type="search"
+                  value={modelQuery}
+                  onChange={(e) => setModelQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && filteredModels[0]) {
+                      e.preventDefault();
+                      setSelectedModel(filteredModels[0]);
+                      setModelQuery(filteredModels[0]);
+                    }
+                  }}
+                  placeholder="Search free OpenRouter models"
+                  className="px-3 py-2"
+                />
+                <p className="text-xs font-semibold">
+                  Search across the free OpenRouter model suggestions and click
+                  one to select it.
+                </p>
+              </div>
+
+              <div className="overflow-hidden border border-slate-200 bg-white">
+                <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 text-xs text-slate-500">
+                  <span>
+                    {filteredModels.length} suggestion
+                    {filteredModels.length === 1 ? "" : "s"}
+                  </span>
+                  <span>
+                    {selectedModel
+                      ? `Selected: ${selectedModel}`
+                      : "No model selected"}
+                  </span>
+                </div>
+
+                <div className="max-h-72 overflow-auto">
+                  {availableModels.length === 0 ? (
+                    <div className="px-3 py-4 text-sm text-slate-500">
+                      No models loaded yet.
+                    </div>
+                  ) : filteredModels.length === 0 ? (
+                    <div className="px-3 py-4 text-sm text-slate-500">
+                      No free OpenRouter models match your search.
+                    </div>
+                  ) : (
+                    filteredModels.slice(0, 50).map((model) => {
+                      const isSelected = model === selectedModel;
+
+                      return (
+                        <button
+                          key={model}
+                          type="button"
+                          onClick={() => {
+                            setSelectedModel(model);
+                            setModelQuery(model);
+                          }}
+                          className={`flex w-full items-center justify-between gap-3 border-b border-slate-100 px-3 py-2 text-left text-sm transition last:border-b-0 ${isSelected ? "bg-slate-100" : "hover:bg-slate-50"}`}
+                        >
+                          <span className="min-w-0 truncate font-medium">
+                            {model}
+                          </span>
+                          {isSelected ? (
+                            <span className="neo-pill shrink-0 px-2 py-0.5 text-xs">
+                              Selected
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {isLoadingModels ? (
+                <p className="text-xs text-slate-500">Loading models...</p>
+              ) : null}
+
+              <p className="text-xs text-slate-500">{saveMessage}</p>
+
+              {error ? <p className="text-xs text-red-600">{error}</p> : null}
             </div>
           </div>
-
-          {isLoadingModels ? (
-            <p className="text-xs text-slate-500">Loading models...</p>
-          ) : null}
-
-          <p className="text-xs text-slate-500">{saveMessage}</p>
-
-          {error ? <p className="text-xs text-red-600">{error}</p> : null}
         </div>
       </div>
     </div>
