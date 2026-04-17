@@ -1339,8 +1339,8 @@ function SettingPage() {
   }, [apiKey, isHydrating, selectedModel]);
 
   return (
-    <div className="mx-auto flex h-full flex-col gap-6 overflow-auto p-4 sm:p-6">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="mx-auto flex h-full flex-col gap-6 overflow-auto">
+      <div className="flex w-full flex-col gap-6">
         {/* App Configuration */}
         <div>
           <SettingsPanel />
