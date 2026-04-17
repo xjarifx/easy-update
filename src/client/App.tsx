@@ -150,21 +150,22 @@ function InputPage({ onEventsCreated }: InputPageProps) {
   const [textInput, setTextInput] = useState("");
   const [documents, setDocuments] = useState<File[]>([]);
   const [images, setImages] = useState<File[]>([]);
-  const [isDropActive, setIsDropActive] = useState(false);
   const [processStatus, setProcessStatus] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [recentEvents, setRecentEvents] = useState<NoticeItem[]>([]);
+  const [isListening, setIsListening] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const speechRecognitionRef = useRef<any>(null);
+  const processAbortControllerRef = useRef<AbortController | null>(null);
 
-  const formatFileSize = (size: number) => {
-    if (size < 1024) {
-      return `${size} B`;
-    }
-
-    if (size < 1024 * 1024) {
-      return `${(size / 1024).toFixed(1)} KB`;
-    }
-
-    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  const speechRecognitionWindow = window as Window & {
+    SpeechRecognition?: new () => any;
+    webkitSpeechRecognition?: new () => any;
   };
+  const SpeechRecognitionConstructor =
+    speechRecognitionWindow.SpeechRecognition ??
+    speechRecognitionWindow.webkitSpeechRecognition;
+  const isVoiceSupported = Boolean(SpeechRecognitionConstructor);
 
   const handleFileUpload = (files: FileList | null) => {
     const selectedFiles = Array.from(files ?? []);
@@ -192,6 +193,78 @@ function InputPage({ onEventsCreated }: InputPageProps) {
     fileInputRef.current?.click();
   };
 
+  const stopVoiceRecognition = () => {
+    speechRecognitionRef.current?.stop?.();
+    speechRecognitionRef.current = null;
+    setIsListening(false);
+  };
+
+  const clearAllInputs = () => {
+    setTextInput("");
+    setDocuments([]);
+    setImages([]);
+    setProcessStatus("");
+    setRecentEvents([]);
+  };
+
+  const handleCancelProcess = () => {
+    processAbortControllerRef.current?.abort();
+    processAbortControllerRef.current = null;
+    setIsProcessing(false);
+    setProcessStatus("Processing cancelled.");
+  };
+
+  const handleVoiceModeToggle = () => {
+    if (!isVoiceSupported || !SpeechRecognitionConstructor) {
+      return;
+    }
+
+    if (isListening) {
+      stopVoiceRecognition();
+      return;
+    }
+
+    const recognition = new SpeechRecognitionConstructor();
+
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0]?.transcript ?? "")
+        .join(" ")
+        .trim();
+
+      if (!transcript) {
+        return;
+      }
+
+      setTextInput((previous) => {
+        const next = previous.trim();
+
+        return next ? `${next} ${transcript}` : transcript;
+      });
+    };
+    recognition.onend = () => {
+      speechRecognitionRef.current = null;
+      setIsListening(false);
+    };
+    recognition.onerror = () => {
+      speechRecognitionRef.current = null;
+      setIsListening(false);
+    };
+
+    speechRecognitionRef.current = recognition;
+    setIsListening(true);
+
+    try {
+      recognition.start();
+    } catch {
+      speechRecognitionRef.current = null;
+      setIsListening(false);
+    }
+  };
+
   const handleProcess = async () => {
     const trimmedText = textInput.trim();
 
@@ -207,7 +280,11 @@ function InputPage({ onEventsCreated }: InputPageProps) {
       return;
     }
 
+    setIsProcessing(true);
     setProcessStatus("Extracting event info and creating events...");
+    setRecentEvents([]);
+    const abortController = new AbortController();
+    processAbortControllerRef.current = abortController;
 
     try {
       const decryptedApiKey = await decryptValue(savedSettings.apiKey);
@@ -222,327 +299,226 @@ function InputPage({ onEventsCreated }: InputPageProps) {
         model: savedSettings.selectedModel,
         apiKey: decryptedApiKey,
         inputText: trimmedText,
+        signal: abortController.signal,
       });
 
       const createdCount = response.createdCount ?? 0;
+      const failedCount = response.failedCount ?? 0;
+      setRecentEvents(response.events ?? []);
       setProcessStatus(
-        `Created ${createdCount} event${createdCount === 1 ? "" : "s"}.`,
+        failedCount > 0
+          ? `Created ${createdCount} event${createdCount === 1 ? "" : "s"}. ${failedCount} event${failedCount === 1 ? "" : "s"} were skipped.`
+          : `Created ${createdCount} event${createdCount === 1 ? "" : "s"}.`,
       );
 
       if (createdCount > 0) {
         await onEventsCreated?.();
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setProcessStatus("Processing cancelled.");
+        return;
+      }
+
       const message =
         error instanceof Error ? error.message : "Failed to process text.";
       setProcessStatus(`Processing failed: ${message}`);
+    } finally {
+      if (processAbortControllerRef.current === abortController) {
+        processAbortControllerRef.current = null;
+      }
+      setIsProcessing(false);
     }
 
     if (documents.length > 0 || images.length > 0) {
       setProcessStatus(
-        (previous) => `${previous} File extraction is not enabled yet.`,
+        (previous) =>
+          `${previous} File attachments are queued for the next extraction flow.`,
       );
-      return;
     }
   };
 
-  const totalDocumentBytes = documents.reduce(
-    (sum, file) => sum + file.size,
-    0,
-  );
-  const totalImageBytes = images.reduce((sum, file) => sum + file.size, 0);
-
-  const imagePreviews = useMemo(() => {
-    const previewUrls = images.map((image) => URL.createObjectURL(image));
-    return previewUrls;
-  }, [images]);
-
   useEffect(() => {
     return () => {
-      imagePreviews.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
+      speechRecognitionRef.current?.abort?.();
     };
-  }, [imagePreviews]);
+  }, []);
 
   return (
-    <section className="h-full border border-slate-200 bg-white p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)]">
-      <div className="max-w-4xl">
-        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
-          Input
-        </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Paste text, drop files, and process everything from one clean panel.
-        </p>
-      </div>
+    <section
+      className="relative h-full overflow-hidden border border-slate-200 bg-white p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)]"
+      onDragOver={(event) => {
+        event.preventDefault();
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        handleFileUpload(event.dataTransfer.files);
+      }}
+    >
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_40%),radial-gradient(circle_at_top_left,rgba(14,165,233,0.14),transparent_35%)]" />
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
-        <div className="space-y-4">
-          <label className="grid gap-2 text-sm font-medium text-slate-700">
-            <span>Large input box</span>
-            <textarea
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Paste notes, a prompt, transcript text, or draft content here."
-              rows={14}
-              className="min-h-72 w-full resize-y border border-slate-200 bg-slate-50 px-4 py-4 text-slate-900 shadow-inner transition outline-none placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-100"
-            />
-          </label>
-
-          <div
-            className={`grid gap-4 border border-dashed p-4 transition ${
-              isDropActive
-                ? "border-slate-400 bg-slate-50"
-                : "border-slate-200 bg-white"
-            }`}
-            onDragEnter={() => setIsDropActive(true)}
-            onDragLeave={() => setIsDropActive(false)}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDropActive(true);
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDropActive(false);
-              handleFileUpload(e.dataTransfer.files);
-            }}
-          >
+      <div className="relative flex h-full min-h-0 flex-col gap-6">
+        <div className="min-h-0 flex-1 space-y-5">
+          <div className="space-y-4">
             <input
               ref={fileInputRef}
               type="file"
               multiple
               accept=".pdf,.doc,.docx,.txt,.md,.rtf,image/*"
               className="hidden"
-              onChange={(e) => handleFileUpload(e.target.files)}
+              onChange={(event) => handleFileUpload(event.target.files)}
             />
 
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold text-slate-900">
+                Big input field
+              </span>
+              <textarea
+                value={textInput}
+                onChange={(event) => setTextInput(event.target.value)}
+                placeholder="Paste a detailed event note, transcript, or schedule brief here."
+                rows={16}
+                className="min-h-88 w-full resize-y rounded-4xl border border-slate-200 bg-white px-5 py-5 text-base leading-7 text-slate-900 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.45)] transition outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              />
+            </label>
+
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  Attach documents or images
-                </p>
-                <p className="mt-1 text-sm text-slate-600">
-                  Drop files here or browse for PDFs, DOC/DOCX, TXT, MD, RTF,
-                  and images.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleBrowseFiles}
-                className="inline-flex items-center justify-center bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-              >
-                Add files
-              </button>
-            </div>
-
-            <div className="grid gap-3 text-sm text-slate-700 sm:grid-cols-3">
-              <div className="bg-slate-50 px-4 py-3">
-                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Text
-                </p>
-                <p className="mt-1 font-medium text-slate-900">
-                  {textInput.trim()
-                    ? `${textInput.length.toLocaleString()} chars`
-                    : "No text yet"}
-                </p>
-              </div>
-              <div className="bg-slate-50 px-4 py-3">
-                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Documents
-                </p>
-                <p className="mt-1 font-medium text-slate-900">
-                  {documents.length} file{documents.length === 1 ? "" : "s"}
-                </p>
-              </div>
-              <div className="bg-slate-50 px-4 py-3">
-                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Images
-                </p>
-                <p className="mt-1 font-medium text-slate-900">
-                  {images.length} file{images.length === 1 ? "" : "s"}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="border border-slate-200 bg-slate-50 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-900">
-                    Documents
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setDocuments([])}
-                    className="text-xs font-medium text-slate-500 transition hover:text-red-600"
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleBrowseFiles}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden="true"
                   >
-                    Clear
-                  </button>
-                </div>
-                <p className="mt-1 text-xs text-slate-500">
-                  Total size {formatFileSize(totalDocumentBytes)}
-                </p>
-                <div className="mt-3 space-y-2">
-                  {documents.length === 0 ? (
-                    <p className="text-sm text-slate-500">
-                      No documents added yet.
-                    </p>
-                  ) : (
-                    documents.map((file, index) => (
-                      <div
-                        key={`${file.name}-${file.lastModified}-${index}`}
-                        className="flex items-center justify-between gap-3 border border-white/70 bg-white px-3 py-2"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-slate-900">
-                            {file.name}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {formatFileSize(file.size)}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setDocuments((prev) =>
-                              prev.filter(
-                                (_, currentIndex) => currentIndex !== index,
-                              ),
-                            )
-                          }
-                          className="shrink-0 text-xs font-medium text-slate-500 transition hover:text-red-600"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+                    <path d="M12 5v14" />
+                    <path d="M5 12h14" />
+                  </svg>
+                  Add doc or pic
+                </button>
 
-              <div className="border border-slate-200 bg-slate-50 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-900">Images</p>
-                  <button
-                    type="button"
-                    onClick={() => setImages([])}
-                    className="text-xs font-medium text-slate-500 transition hover:text-red-600"
+                <button
+                  type="button"
+                  onClick={handleVoiceModeToggle}
+                  disabled={!isVoiceSupported}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold shadow-sm transition ${
+                    isListening
+                      ? "border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                      : isVoiceSupported
+                        ? "border border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50"
+                        : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden="true"
                   >
-                    Clear
-                  </button>
-                </div>
-                <p className="mt-1 text-xs text-slate-500">
-                  Total size {formatFileSize(totalImageBytes)}
-                </p>
-                <div className="mt-3 space-y-3">
-                  {images.length === 0 ? (
-                    <p className="text-sm text-slate-500">
-                      No images added yet.
-                    </p>
-                  ) : (
-                    images.map((image, index) => (
-                      <div
-                        key={`${image.name}-${image.lastModified}-${index}`}
-                        className="overflow-hidden border border-white/70 bg-white"
-                      >
-                        <img
-                          src={imagePreviews[index]}
-                          alt={image.name}
-                          className="h-32 w-full object-cover"
-                        />
-                        <div className="flex items-center justify-between gap-3 px-3 py-2">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-slate-900">
-                              {image.name}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {formatFileSize(image.size)}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setImages((prev) =>
-                                prev.filter(
-                                  (_, currentIndex) => currentIndex !== index,
-                                ),
-                              )
-                            }
-                            className="shrink-0 text-xs font-medium text-slate-500 transition hover:text-red-600"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                    <path d="M12 18a4 4 0 0 0 4-4V8a4 4 0 1 0-8 0v6a4 4 0 0 0 4 4Z" />
+                    <path d="M19 11v1a7 7 0 0 1-14 0v-1" />
+                    <path d="M12 19v3" />
+                  </svg>
+                  {isListening ? "Stop voice" : "Voice mode"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={clearAllInputs}
+                  className="rounded-full px-4 py-3 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                >
+                  Clear
+                </button>
               </div>
-            </div>
-
-            <div className="flex flex-col gap-3 border-t border-slate-200 pt-1 sm:flex-row sm:items-center sm:justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  setTextInput("");
-                  setDocuments([]);
-                  setImages([]);
-                  setProcessStatus("");
-                }}
-                className="text-sm font-medium text-slate-500 transition hover:text-slate-900"
-              >
-                Clear all
-              </button>
 
               <button
                 type="button"
-                onClick={handleProcess}
-                className="inline-flex items-center justify-center bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                onClick={isProcessing ? handleCancelProcess : handleProcess}
+                className={`inline-flex items-center justify-center rounded-full px-7 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_-18px_rgba(37,99,235,0.85)] transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
+                  isProcessing
+                    ? "bg-amber-600 hover:bg-amber-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
                 disabled={
+                  !isProcessing &&
                   !textInput.trim() &&
                   documents.length === 0 &&
                   images.length === 0
                 }
               >
-                Process
+                {isProcessing ? "Cancel" : "Process"}
               </button>
             </div>
 
             {processStatus ? (
-              <p className="text-sm text-slate-600">{processStatus}</p>
+              <p className="text-sm leading-6 text-slate-600">
+                {processStatus}
+              </p>
             ) : null}
           </div>
-        </div>
 
-        <aside className="border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-slate-900">Summary</p>
-          <div className="mt-4 space-y-3 text-sm text-slate-700">
-            <div className="bg-white px-4 py-3">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                Characters
-              </p>
-              <p className="mt-1 text-base font-medium text-slate-900">
-                {textInput.length.toLocaleString()}
-              </p>
+          {recentEvents.length > 0 || processStatus ? (
+            <div className="rounded-[28px] border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-emerald-950">
+                    Newly added events
+                  </p>
+                  <p className="text-xs text-emerald-700">
+                    {recentEvents.length > 0
+                      ? `${recentEvents.length} event${recentEvents.length === 1 ? "" : "s"} created from the latest process run.`
+                      : "Processed events will appear here after extraction."}
+                  </p>
+                </div>
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                  {recentEvents.length}
+                </span>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {recentEvents.length === 0 ? (
+                  <p className="text-sm leading-6 text-emerald-700">
+                    Extract an event brief and the new entries will show up here
+                    right away.
+                  </p>
+                ) : (
+                  recentEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900">
+                            {event.description}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {event.date} {event.time}
+                          </p>
+                        </div>
+                        <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700">
+                          Added
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-            <div className="bg-white px-4 py-3">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                Files
-              </p>
-              <p className="mt-1 text-base font-medium text-slate-900">
-                {documents.length + images.length}
-              </p>
-            </div>
-            <div className="bg-white px-4 py-3">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                Ready
-              </p>
-              <p className="mt-1 text-base font-medium text-slate-900">
-                {textInput.trim() || documents.length > 0 || images.length > 0
-                  ? "Yes"
-                  : "Not yet"}
-              </p>
-            </div>
-          </div>
-        </aside>
+          ) : null}
+        </div>
       </div>
     </section>
   );
