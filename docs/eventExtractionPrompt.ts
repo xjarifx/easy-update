@@ -1,4 +1,28 @@
-export const eventExtractionSystemPrompt = `You are an event extraction engine.
+const formatReferenceDate = (value: Date) => {
+  const datePart = new Intl.DateTimeFormat("en-GB", {
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(value);
+
+  const timePart = new Intl.DateTimeFormat("en-GB", {
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(value);
+
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  return `${datePart} ${timePart} ${timeZone}`;
+};
+
+export const buildEventExtractionSystemPrompt = (referenceDate = new Date()) =>
+  `You are an event extraction engine.
+
+Current local reference time: ${formatReferenceDate(referenceDate)}.
+Use this as "today" when resolving relative dates like today, tomorrow, next Monday, or next class.
 
 Your task:
 Extract all schedulable events from the user text, even when phrased indirectly, politely, or tentatively.
@@ -80,3 +104,5 @@ Input like "#AI_QUIZ", "Course: CSE316_Artificial Intelligence", "Quiz 03", "Dat
 - title: "AI quiz"
 - moreInfo containing quiz number, course, and topics (for example "Quiz 03 | CSE316 Artificial Intelligence | Topics: BFS, DFS, UCS")
 - normalized date/time in the required formats.`;
+
+export const eventExtractionSystemPrompt = buildEventExtractionSystemPrompt();

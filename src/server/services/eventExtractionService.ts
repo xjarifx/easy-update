@@ -4,7 +4,7 @@ import {
   toCanonicalNoticeDate,
   toCanonicalNoticeTime,
 } from "../utils/noticeNormalization.js";
-import { eventExtractionSystemPrompt } from "../../../docs/eventExtractionPrompt.js";
+import { buildEventExtractionSystemPrompt } from "../../../docs/eventExtractionPrompt.js";
 
 const emptyEventsJson = '{"events":[]}';
 
@@ -135,6 +135,10 @@ const extractEventJsonFromModel = async (
   inputText: string,
   requestOrigin: string,
 ) => {
+  const eventExtractionSystemPrompt = buildEventExtractionSystemPrompt(
+    new Date(),
+  );
+
   if (provider === "openrouter") {
     const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
