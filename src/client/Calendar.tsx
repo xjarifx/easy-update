@@ -14,6 +14,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import type { EventContentArg } from "@fullcalendar/core";
 import type { NoticeItem, NoticeMutationInput } from "./types/domain";
 import { useAppConfigSettings } from "./config/AppConfigContext";
+import { ConfirmModal } from "./ConfirmModal";
 import { formatDate, formatTime, TimeFormat } from "./config/appConfig";
 
 function formatLocalDate(date: Date) {
@@ -92,6 +93,20 @@ export default function Calendar({
     time: "09:00",
   });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    eventId: string | null;
+    onConfirm: () => Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    eventId: null,
+    onConfirm: async () => {},
+  });
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
 
   // Formatting functions that use config
   const formatDisplayDate = (value: Date | string) => {
@@ -208,21 +223,33 @@ export default function Calendar({
     }
   };
 
-  const handleDeleteEvent = async (id: string) => {
-    const shouldDelete = window.confirm("Delete this event?");
+  const handleDeleteEvent = (id: string) => {
+    const event = notices.find((n) => n.id === Number(id));
+    if (!event) return;
 
-    if (!shouldDelete) {
-      return;
-    }
-
-    try {
-      setSubmitError("");
-      await onDeleteNotice(Number(id));
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to delete event.";
-      setSubmitError(message);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Event",
+      message: `Delete "${event.description}" on ${formatDate(
+        event.date,
+        config.dateFormat,
+      )} at ${formatTime(event.date + "T" + event.time, config.timeFormat)}?`,
+      eventId: id,
+      onConfirm: async () => {
+        try {
+          setIsConfirmLoading(true);
+          setSubmitError("");
+          await onDeleteNotice(Number(id));
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to delete event.";
+          setSubmitError(message);
+        } finally {
+          setIsConfirmLoading(false);
+        }
+      },
+    });
   };
 
   const startEditEvent = (event: CalendarEvent) => {
@@ -540,6 +567,20 @@ export default function Calendar({
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDangerous
+        isLoading={isConfirmLoading}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }}
+      />
     </div>
   );
 }

@@ -26,6 +26,18 @@ export async function apiRequest<T>(
   init?: RequestInit,
 ): Promise<T> {
   const response = await fetch(input, init);
+
+  // Handle 204 No Content and other empty responses
+  if (
+    response.status === 204 ||
+    response.headers.get("content-length") === "0"
+  ) {
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return undefined as T;
+  }
+
   const payload = (await response.json()) as ApiResponse<T>;
 
   if (!response.ok) {

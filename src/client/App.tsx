@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Calendar from "./Calendar";
 import { SettingsPanel } from "./SettingsPanel";
+import { ConfirmModal } from "./ConfirmModal";
 import { apiRequest } from "./api/http";
 import { extractAndCreateEvents } from "./api/events";
 import { fetchProviderModels } from "./api/providers";
@@ -918,6 +919,19 @@ function NoticePage({
   const config = useAppConfigSettings();
   const [editingNoticeId, setEditingNoticeId] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: async () => {},
+  });
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
   const [formData, setFormData] = useState({
     date: getTodayLocalDate(),
     time: "09:00",
@@ -1030,26 +1044,78 @@ function NoticePage({
   };
 
   const handleDelete = async (notice: NoticeItem) => {
-    const shouldDelete = window.confirm(
-      `Delete notice "${notice.description}" on ${notice.date} ${notice.time}?`,
-    );
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Notice",
+      message: `Delete "${notice.description}" on ${formatDisplayDate(notice.date)} at ${formatTime(
+        notice.date + "T" + notice.time,
+        config.timeFormat,
+      )}?`,
+      onConfirm: async () => {
+        try {
+          setIsConfirmLoading(true);
+          setActionError("");
+          await onDeleteNotice(notice.id);
 
-    if (!shouldDelete) {
-      return;
+          if (editingNoticeId === notice.id) {
+            resetForm();
+          }
+          setSelectedIds((prev) => {
+            const next = new Set(prev);
+            next.delete(notice.id);
+            return next;
+          });
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to delete notice.";
+          setActionError(message);
+        } finally {
+          setIsConfirmLoading(false);
+        }
+      },
+    });
+  };
+
+  const handleRowClick = (id: number, e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
+        return next;
+      });
     }
+  };
 
-    try {
-      setActionError("");
-      await onDeleteNotice(notice.id);
-
-      if (editingNoticeId === notice.id) {
-        resetForm();
-      }
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to delete notice.";
-      setActionError(message);
-    }
+  const handleBulkDelete = () => {
+    const count = selectedIds.size;
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Multiple Notices",
+      message: `Delete ${count} notice${count === 1 ? "" : "s"}? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          setIsConfirmLoading(true);
+          setActionError("");
+          await Promise.all(
+            Array.from(selectedIds).map((id) => onDeleteNotice(id)),
+          );
+          setSelectedIds(new Set());
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to delete notices.";
+          setActionError(message);
+        } finally {
+          setIsConfirmLoading(false);
+        }
+      },
+    });
   };
 
   return (
@@ -1155,6 +1221,30 @@ function NoticePage({
           <p className="text-sm text-slate-500">No notices available yet.</p>
         ) : (
           <div className="overflow-hidden border border-slate-200 bg-white">
+            {selectedIds.size > 0 && (
+              <div className="flex items-center justify-between border-b border-slate-200 bg-blue-50 px-4 py-3">
+                <p className="text-sm font-semibold">
+                  {selectedIds.size} notice{selectedIds.size === 1 ? "" : "s"}
+                  selected
+                </p>
+                <button
+                  type="button"
+                  onClick={handleBulkDelete}
+                  className="neo-button-danger inline-flex items-center gap-2 px-4 py-2 text-sm"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  Delete Selected
+                </button>
+              </div>
+            )}
+            {selectedIds.size === 0 && (
+              <div className="border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-600">
+                <p>
+                  💡 Ctrl+Click (or Cmd+Click on Mac) rows to select multiple
+                  notices
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] border-b border-slate-200 px-4 py-4 text-xs tracking-wide text-slate-500 uppercase">
               <div>Done</div>
               <div>Date</div>
@@ -1166,7 +1256,12 @@ function NoticePage({
               {sortedNoticesForDisplay.map((notice) => (
                 <div
                   key={notice.id}
-                  className="grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] items-center border-b border-slate-100 px-4 py-4 text-sm last:border-b-0"
+                  onClick={(e) => handleRowClick(notice.id, e)}
+                  className={`grid cursor-pointer grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] items-center border-b border-slate-100 px-4 py-4 text-sm transition-colors last:border-b-0 hover:bg-slate-50 ${
+                    selectedIds.has(notice.id)
+                      ? "border-l-4 border-blue-500 bg-blue-100"
+                      : ""
+                  }`}
                 >
                   <div>
                     <label className="inline-flex items-center">
@@ -1221,6 +1316,19 @@ function NoticePage({
           </div>
         )}
       </div>
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDangerous
+        isLoading={isConfirmLoading}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }}
+      />
     </div>
   );
 }
