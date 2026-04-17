@@ -330,7 +330,7 @@ export default function Calendar({
           <div className="mb-4 space-y-3">
             <button
               onClick={handleCreateEventClick}
-              className="w-full px-4 py-2"
+              className="calendar-toolbar-match-button w-full px-4 py-2"
             >
               + Create Event
             </button>
