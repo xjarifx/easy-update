@@ -452,9 +452,9 @@ function InputPage({
         handleFileUpload(event.dataTransfer.files);
       }}
     >
-      <div className="mx-auto flex h-full min-h-0 max-w-5xl flex-col gap-4">
-        <div className="min-h-0 flex-1 space-y-4">
-          <div className="space-y-4">
+      <div className="flex h-full min-h-0 flex-col gap-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4">
             <input
               ref={fileInputRef}
               type="file"
@@ -464,13 +464,12 @@ function InputPage({
               onChange={(event) => handleFileUpload(event.target.files)}
             />
 
-            <label className="grid gap-2">
+            <label className="flex min-h-0 flex-1 flex-col gap-2">
               <textarea
                 value={textInput}
                 onChange={(event) => setTextInput(event.target.value)}
                 placeholder="Paste a detailed event note, transcript, or schedule brief here."
-                rows={16}
-                className="min-h-88 w-full resize-y px-4 py-4 text-base leading-7"
+                className="h-full min-h-0 w-full flex-1 resize-none px-4 py-4 text-base leading-7"
               />
             </label>
 
