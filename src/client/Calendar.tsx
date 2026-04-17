@@ -446,7 +446,7 @@ export default function Calendar({
               selectedDayEvents.map((event) => (
                 <div
                   key={event.id}
-                  className={`neo-card overflow-hidden p-4 transition-all ${
+                  className={`neo-card overflow-hidden transition-all ${
                     event.completed
                       ? "border-emerald-200 bg-emerald-50/55"
                       : "border-slate-200 bg-white/65"
@@ -523,7 +523,7 @@ export default function Calendar({
                       } grid gap-3`}
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-extrabold text-slate-900">
+                        <p className="text-xs font-extrabold text-slate-900">
                           {formatEventLabel(event.start)}
                         </p>
                       </div>
