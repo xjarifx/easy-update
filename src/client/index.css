@@ -681,6 +681,7 @@ body::-webkit-scrollbar,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 400;
 }
 
 .fc .fc-daygrid-event-harness {
@@ -707,4 +708,12 @@ body::-webkit-scrollbar,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.fc .fc-event-time {
+  font-weight: 800;
+}
+
+.fc .fc-event-title {
+  font-weight: 400;
 }

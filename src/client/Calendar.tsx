@@ -370,7 +370,8 @@ export default function Calendar({
 
     const timeEl = el.querySelector<HTMLElement>(".fc-event-time");
     if (timeEl) {
-      timeEl.textContent = hasNoTime ? "NT" : timeEl.textContent;
+      timeEl.hidden = hasNoTime;
+      timeEl.style.display = hasNoTime ? "none" : "";
       timeEl.classList.toggle("line-through", isCompleted);
     }
 
@@ -475,11 +476,7 @@ export default function Calendar({
             headerToolbar={false}
             events={events}
             dayMaxEvents={true}
-            eventTimeFormat={{
-              hour: "numeric",
-              minute: "2-digit",
-              meridiem: "short",
-            }}
+            displayEventTime={false}
             eventDidMount={decorateEventElement}
             datesSet={(arg) => setCalendarTitle(arg.view.title)}
             dateClick={handleDateClick}
