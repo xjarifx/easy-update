@@ -13,11 +13,10 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import type { EventContentArg } from "@fullcalendar/core";
 import type { NoticeItem, NoticeMutationInput } from "./types/domain";
 import { useAppConfigSettings } from "./config/AppConfigContext";
 import { ConfirmModal } from "./ConfirmModal";
-import { formatDate, formatTime, TimeFormat } from "./config/appConfig";
+import { formatDate, formatTime } from "./config/appConfig";
 
 function formatLocalDate(date: Date) {
   const year = date.getFullYear();
@@ -147,28 +146,6 @@ export default function Calendar({
     }
 
     return `${formatDisplayDate(value)} ${formatDisplayTime(new Date(`${value}T12:00:00`))}`;
-  };
-
-  const formatCalendarEventTime = (value: string) => {
-    const date = parseEventDate(value);
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-
-    if (config.timeFormat === TimeFormat.TWENTY_FOUR_HOUR) {
-      if (minutes === 0) {
-        return `${hours}:00`;
-      }
-      return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-    } else {
-      const meridiem = hours >= 12 ? "pm" : "am";
-      const normalizedHour = hours % 12 === 0 ? 12 : hours % 12;
-
-      if (minutes === 0) {
-        return `${normalizedHour}${meridiem}`;
-      }
-
-      return `${normalizedHour}:${String(minutes).padStart(2, "0")}${meridiem}`;
-    }
   };
 
   const events: CalendarEvent[] = notices.map((notice) => ({
@@ -376,30 +353,32 @@ export default function Calendar({
     setShowModal(true);
   };
 
-  const renderEventContent = (eventInfo: EventContentArg) => (
-    <span
-      className={`fc-event-label-wrap ${
-        eventInfo.event.extendedProps.completed ? "opacity-65" : ""
-      }`}
-    >
-      <strong
-        className={`fc-event-label-time ${
-          eventInfo.event.extendedProps.completed ? "line-through" : ""
-        }`}
-      >
-        {eventInfo.event.extendedProps.hasNoTime
-          ? "NT"
-          : formatCalendarEventTime(eventInfo.event.startStr)}
-      </strong>
-      <span
-        className={`fc-event-label-title ${
-          eventInfo.event.extendedProps.completed ? "line-through" : ""
-        }`}
-      >
-        {eventInfo.event.title}
-      </span>
-    </span>
-  );
+  const decorateEventElement = (arg: {
+    el: HTMLElement;
+    event: {
+      extendedProps: {
+        completed?: boolean;
+        hasNoTime?: boolean;
+      };
+    };
+  }) => {
+    const { el, event } = arg;
+    const isCompleted = Boolean(event.extendedProps.completed);
+    const hasNoTime = Boolean(event.extendedProps.hasNoTime);
+
+    el.classList.toggle("opacity-65", isCompleted);
+
+    const timeEl = el.querySelector<HTMLElement>(".fc-event-time");
+    if (timeEl) {
+      timeEl.textContent = hasNoTime ? "NT" : timeEl.textContent;
+      timeEl.classList.toggle("line-through", isCompleted);
+    }
+
+    const titleEl = el.querySelector<HTMLElement>(".fc-event-title");
+    if (titleEl) {
+      titleEl.classList.toggle("line-through", isCompleted);
+    }
+  };
 
   useEffect(() => {
     const calendarApi = calendarRef.current?.getApi();
@@ -501,7 +480,7 @@ export default function Calendar({
               minute: "2-digit",
               meridiem: "short",
             }}
-            eventContent={renderEventContent}
+            eventDidMount={decorateEventElement}
             datesSet={(arg) => setCalendarTitle(arg.view.title)}
             dateClick={handleDateClick}
             eventClick={handleEventClick}
