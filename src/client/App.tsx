@@ -1339,15 +1339,15 @@ function SettingPage() {
   }, [apiKey, isHydrating, selectedModel]);
 
   return (
-    <div className="mx-auto flex h-full flex-col gap-0 overflow-auto sm:gap-0">
-      <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-2">
+    <div className="mx-auto flex h-full flex-col gap-6 overflow-auto p-4 sm:p-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         {/* App Configuration */}
-        <div className="overflow-auto border-r border-slate-200">
+        <div>
           <SettingsPanel />
         </div>
 
         {/* API Settings */}
-        <div className="overflow-auto p-4 sm:p-6">
+        <div className="p-4 sm:p-6">
           <div>
             <h2 className="neo-label text-2xl">API Configuration</h2>
             <p className="mt-1 text-sm font-semibold">
