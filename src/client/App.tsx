@@ -798,6 +798,7 @@ function getTodayLocalDate() {
 }
 
 const NOTICE_AUTO_REFRESH_INTERVAL_MS = 3000;
+const DEFAULT_NOTICE_TIME = "09:00";
 
 const noticeMonthByShortName: Record<string, number> = {
   JAN: 1,
@@ -959,9 +960,10 @@ function NoticePage({
   });
   const [isConfirmLoading, setIsConfirmLoading] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [isNoTimeSelected, setIsNoTimeSelected] = useState(false);
   const [formData, setFormData] = useState({
     date: getTodayLocalDate(),
-    time: "09:00",
+    time: DEFAULT_NOTICE_TIME,
     title: "",
     moreInfo: "",
     completed: false,
@@ -1002,11 +1004,12 @@ function NoticePage({
   const resetForm = () => {
     setFormData({
       date: getTodayLocalDate(),
-      time: "09:00",
+      time: DEFAULT_NOTICE_TIME,
       title: "",
       moreInfo: "",
       completed: false,
     });
+    setIsNoTimeSelected(false);
     setEditingNoticeId(null);
     setActionError("");
   };
@@ -1014,10 +1017,16 @@ function NoticePage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.date || !formData.time || !formData.title.trim()) {
+    if (
+      !formData.date ||
+      (!isNoTimeSelected && !formData.time) ||
+      !formData.title.trim()
+    ) {
       setActionError("Date, time, and title are required.");
       return;
     }
+
+    const timeValue = isNoTimeSelected ? "No time" : formData.time;
 
     try {
       setIsSaving(true);
@@ -1026,7 +1035,7 @@ function NoticePage({
       if (editingNoticeId === null) {
         await onCreateNotice({
           date: formData.date,
-          time: formData.time,
+          time: timeValue,
           title: formData.title.trim(),
           moreInfo: formData.moreInfo.trim(),
           completed: formData.completed,
@@ -1034,7 +1043,7 @@ function NoticePage({
       } else {
         await onUpdateNotice(editingNoticeId, {
           date: formData.date,
-          time: formData.time,
+          time: timeValue,
           title: formData.title.trim(),
           moreInfo: formData.moreInfo.trim(),
           completed: formData.completed,
@@ -1052,10 +1061,13 @@ function NoticePage({
   };
 
   const handleEdit = (notice: NoticeItem) => {
+    const noTime = isNoTimeValue(notice.time);
+
     setEditingNoticeId(notice.id);
+    setIsNoTimeSelected(noTime);
     setFormData({
       date: notice.date,
-      time: notice.time,
+      time: noTime ? DEFAULT_NOTICE_TIME : notice.time,
       title: notice.title,
       moreInfo: notice.moreInfo ?? "",
       completed: notice.completed,
@@ -1191,31 +1203,56 @@ function NoticePage({
 
       <form
         onSubmit={handleSubmit}
-        className="grid gap-4 border border-slate-200 bg-white p-5 md:grid-cols-[160px_140px_minmax(0,1fr)_auto]"
+        className="grid gap-4 border border-slate-200 bg-white p-5"
       >
-        <label className="neo-label grid gap-1 text-sm">
-          Date
-          <input
-            type="date"
-            value={formData.date}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, date: e.target.value }))
-            }
-            className="px-3 py-2"
-          />
-        </label>
+        <div className="grid gap-4 md:grid-cols-[180px_minmax(260px,340px)] md:items-end">
+          <label className="neo-label grid gap-1 text-sm">
+            Date
+            <input
+              type="date"
+              value={formData.date}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, date: e.target.value }))
+              }
+              className="px-3 py-2"
+            />
+          </label>
 
-        <label className="neo-label grid gap-1 text-sm">
-          Time
-          <input
-            type="time"
-            value={formData.time}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, time: e.target.value }))
-            }
-            className="px-3 py-2"
-          />
-        </label>
+          <div className="neo-label grid gap-1 text-sm">
+            <span>Time</span>
+            <div className="flex items-center gap-3">
+              <input
+                type="time"
+                value={isNoTimeSelected ? "" : formData.time}
+                onChange={(e) => {
+                  setIsNoTimeSelected(false);
+                  setFormData((prev) => ({ ...prev, time: e.target.value }));
+                }}
+                className="w-full max-w-[160px] px-3 py-2"
+                disabled={isNoTimeSelected}
+              />
+              <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={isNoTimeSelected}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIsNoTimeSelected(checked);
+
+                    if (!checked) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        time: prev.time || DEFAULT_NOTICE_TIME,
+                      }));
+                    }
+                  }}
+                  className="h-4 w-4"
+                />
+                No time
+              </label>
+            </div>
+          </div>
+        </div>
 
         <label className="neo-label grid gap-1 text-sm">
           Title
@@ -1230,7 +1267,7 @@ function NoticePage({
           />
         </label>
 
-        <label className="neo-label grid gap-1 text-sm md:col-span-3">
+        <label className="neo-label grid gap-1 text-sm">
           More info
           <textarea
             value={formData.moreInfo}
@@ -1242,7 +1279,7 @@ function NoticePage({
           />
         </label>
 
-        <div className="flex items-end gap-2 md:col-span-4">
+        <div className="flex items-end gap-2">
           <button
             type="submit"
             className="inline-flex items-center gap-2 px-4 py-2 text-sm"
