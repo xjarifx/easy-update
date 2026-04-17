@@ -1,24 +1,29 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap");
 @import "tailwindcss";
 
 :root {
-  --mac-bg: #f5f5f7;
-  --mac-surface: #ffffff;
-  --mac-surface-glass: rgba(255, 255, 255, 0.5);
-  --mac-text: #1d1d1f;
-  --mac-text-muted: #6e6e73;
-  --mac-border: #d2d2d7;
-  --mac-border-soft: #d2d2d7;
-  --mac-accent: #007aff;
-  --mac-accent-strong: #0066d6;
+  --mac-bg: #dce5f1;
+  --mac-bg-ink: #0f1724;
+  --mac-surface: rgba(247, 251, 255, 0.5);
+  --mac-surface-strong: rgba(246, 251, 255, 0.68);
+  --mac-surface-glass: rgba(227, 240, 255, 0.36);
+  --mac-text: #0d1b2a;
+  --mac-text-muted: #1f3851;
+  --mac-border: rgba(92, 127, 162, 0.58);
+  --mac-border-soft: rgba(110, 147, 184, 0.46);
+  --mac-accent: #1768c9;
+  --mac-accent-strong: #0f54a5;
   --mac-danger: #ff453a;
   --mac-success: #30d158;
   --calendar-toolbar-button-height: 40px;
   --mac-radius: 0px;
   --mac-shadow-soft:
-    0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --app-font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
+    0 22px 52px -30px rgba(15, 30, 45, 0.7),
+    0 12px 24px -22px rgba(17, 42, 67, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  --glass-blur: blur(30px) saturate(185%);
+  --app-timing: 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --app-font-family: "Manrope", "Space Grotesk", "Segoe UI", sans-serif;
 }
 
 * {
@@ -28,14 +33,75 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--mac-bg);
+  background:
+    radial-gradient(
+      circle at 12% 10%,
+      rgba(255, 255, 255, 0.78),
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 86% 14%,
+      rgba(97, 184, 255, 0.34),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 82% 84%,
+      rgba(48, 116, 209, 0.24),
+      transparent 36%
+    ),
+    linear-gradient(130deg, #d9e5f2 0%, #c7d8ea 46%, #bfd3e8 100%);
   color: var(--mac-text-muted);
   line-height: 1.55;
   font-family: var(--app-font-family);
+  overflow: hidden;
 }
 
 #root {
   min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20vh -20vw;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.07) 0 1px,
+    transparent 1px 15px
+  );
+  mix-blend-mode: soft-light;
+  animation: app-atmosphere 22s linear infinite;
+  z-index: -1;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at 24% 26%,
+      rgba(255, 255, 255, 0.28),
+      transparent 34%
+    ),
+    radial-gradient(circle at 79% 73%, rgba(71, 141, 220, 0.2), transparent 38%);
+  filter: blur(36px);
+  opacity: 0.7;
+  z-index: -1;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+label,
+th,
+.neo-label {
+  font-family: "Space Grotesk", "Manrope", sans-serif;
 }
 
 h1,
@@ -74,6 +140,8 @@ small {
 
 .neo-app-shell {
   background: var(--mac-bg);
+  position: relative;
+  isolation: isolate;
 }
 
 .neo-panel,
@@ -84,17 +152,43 @@ small {
   border: 1px solid var(--mac-border-soft);
   border-radius: 0;
   background: var(--mac-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: var(--mac-shadow-soft);
+  transition:
+    border-color var(--app-timing),
+    box-shadow var(--app-timing),
+    background-color var(--app-timing),
+    transform var(--app-timing);
+  position: relative;
+}
+
+.neo-panel::before,
+.neo-card::before,
+.neo-bento::before,
+.neo-modal::before,
+.neo-sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.38) 0%,
+    rgba(255, 255, 255, 0.05) 48%,
+    rgba(116, 174, 237, 0.08) 100%
+  );
 }
 
 .neo-sidebar {
   background: var(--mac-surface-glass);
-  border-color: rgba(255, 255, 255, 0.75);
+  border-color: rgba(184, 212, 241, 0.72);
   box-shadow:
-    inset -1px 0 0 rgba(255, 255, 255, 0.7),
-    0 10px 30px -24px rgba(29, 29, 31, 0.2);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
+    inset -1px 0 0 rgba(255, 255, 255, 0.54),
+    24px 0 45px -42px rgba(16, 31, 49, 0.82);
+  backdrop-filter: blur(28px) saturate(172%);
+  -webkit-backdrop-filter: blur(28px) saturate(172%);
+  animation: panel-enter 540ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
 .neo-bento + .neo-bento,
@@ -116,16 +210,23 @@ textarea,
 input,
 select,
 textarea {
-  background: #ffffff;
-  border-color: #d2d2d7 !important;
+  background: var(--mac-surface-strong);
+  border-color: var(--mac-border) !important;
   color: var(--mac-text);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition:
+    border-color var(--app-timing),
+    box-shadow var(--app-timing),
+    background-color var(--app-timing);
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: #007aff !important;
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+  border-color: var(--mac-accent-strong) !important;
+  box-shadow: 0 0 0 3px rgba(15, 84, 165, 0.34);
+  background: rgba(248, 252, 255, 0.8);
 }
 
 textarea::placeholder,
@@ -136,26 +237,34 @@ input::placeholder {
 
 button {
   background: var(--mac-accent);
-  border-color: #007aff !important;
+  border-color: rgba(34, 109, 197, 0.7) !important;
   border-radius: 0 !important;
   color: #ffffff;
   cursor: pointer;
   font-weight: 700;
   line-height: 1.2;
-  box-shadow: none;
+  box-shadow: 0 8px 20px -14px rgba(16, 54, 97, 0.74);
   transition:
-    transform 120ms ease,
-    box-shadow 120ms ease,
-    background-color 120ms ease;
+    transform var(--app-timing),
+    box-shadow var(--app-timing),
+    background-color var(--app-timing),
+    filter var(--app-timing);
+}
+
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid rgba(12, 63, 128, 0.95);
+  outline-offset: 2px;
 }
 
 button:hover:not(:disabled) {
   background: var(--mac-accent-strong);
-  box-shadow: none;
+  box-shadow: 0 18px 26px -19px rgba(14, 51, 91, 0.92);
+  filter: brightness(1.03);
 }
 
 button:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: translateY(1px);
 }
 
 button:disabled {
@@ -167,14 +276,14 @@ button:disabled {
 }
 
 .neo-button-secondary {
-  background: rgba(0, 0, 0, 0.05);
-  border-color: transparent !important;
+  background: rgba(232, 241, 252, 0.66);
+  border-color: rgba(140, 168, 198, 0.48) !important;
   color: var(--mac-text);
-  box-shadow: none;
+  box-shadow: 0 8px 16px -16px rgba(20, 45, 73, 0.8);
 }
 
 .neo-button-secondary:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(223, 236, 251, 0.88);
 }
 
 .neo-button-danger {
@@ -190,7 +299,7 @@ button:disabled {
 .neo-button-danger-ghost {
   background: transparent;
   border-color: transparent !important;
-  color: #ff3b30;
+  color: #bd1f1f;
   box-shadow: none;
   padding-left: 0.25rem;
   padding-right: 0.25rem;
@@ -199,7 +308,7 @@ button:disabled {
 
 .neo-button-danger-ghost:hover:not(:disabled) {
   background: rgba(255, 59, 48, 0.12);
-  color: #d92f26;
+  color: #9e1717;
   box-shadow: none;
 }
 
@@ -207,11 +316,13 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  border: 1px solid #e6ebf3;
+  border: 1px solid rgba(133, 162, 193, 0.42);
   border-radius: 0;
-  background: #f7f9fc;
+  background: rgba(236, 245, 255, 0.72);
   padding: 0.2rem 0.5rem;
   font-weight: 600;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .neo-divider {
@@ -222,14 +333,16 @@ button:disabled {
   border: 1px solid var(--mac-border-soft);
   border-radius: 0;
   box-shadow: var(--mac-shadow-soft);
-  background: #ffffff;
+  background: rgba(246, 251, 255, 0.66);
   overflow: hidden;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 .neo-table-header {
   background: transparent;
   border-bottom: 1px solid rgba(167, 177, 196, 0.24);
-  color: #6e6e73;
+  color: #233c56;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -241,14 +354,14 @@ button:disabled {
 }
 
 .neo-selected {
-  background: #eaf3ff !important;
-  border-color: rgba(0, 122, 255, 0.28) !important;
+  background: rgba(146, 197, 255, 0.25) !important;
+  border-color: rgba(35, 119, 217, 0.42) !important;
 }
 
 .neo-panel,
 .neo-bento,
 .neo-modal {
-  background: #ffffff;
+  background: rgba(247, 251, 255, 0.64);
   border-color: var(--mac-border-soft);
   box-shadow: var(--mac-shadow-soft);
 }
@@ -267,9 +380,9 @@ button:disabled {
 }
 
 .neo-nav-item:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(229, 240, 252, 0.86);
   color: #1d1d1f;
-  transform: none;
+  transform: translateX(2px);
 }
 
 .neo-sidebar .neo-label,
@@ -286,14 +399,121 @@ button:disabled {
 }
 
 .neo-sidebar .neo-nav-item.neo-button-secondary:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(223, 236, 251, 0.82);
   color: #1d1d1f;
 }
 
 .neo-sidebar .neo-pill {
-  border-color: rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(112, 148, 182, 0.3);
+  background: rgba(241, 248, 255, 0.68);
   color: #1d1d1f;
+}
+
+.neo-app-shell .bg-white,
+.neo-app-shell [class*="bg-white"],
+.neo-app-shell [class*="bg-blue-50"] {
+  background: rgba(247, 251, 255, 0.52) !important;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.neo-app-shell [class*="border-slate"],
+.neo-app-shell [class*="border-blue"] {
+  border-color: rgba(112, 147, 182, 0.5) !important;
+}
+
+.neo-app-shell [class*="text-slate-500"],
+.neo-app-shell [class*="text-slate-600"],
+.neo-app-shell [class*="text-gray-500"] {
+  color: #29445f !important;
+}
+
+.neo-app-shell section > div.block,
+.neo-app-shell section > div:not(.hidden) {
+  animation: page-enter 420ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.neo-app-shell .neo-card,
+.neo-app-shell .neo-panel,
+.neo-app-shell .neo-table,
+.neo-app-shell .fc,
+.neo-app-shell form {
+  animation: panel-enter 460ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.neo-app-shell .neo-card:nth-of-type(2),
+.neo-app-shell .neo-panel:nth-of-type(2),
+.neo-app-shell .neo-table:nth-of-type(2) {
+  animation-delay: 70ms;
+}
+
+.neo-app-shell .neo-card:nth-of-type(3),
+.neo-app-shell .neo-panel:nth-of-type(3),
+.neo-app-shell .neo-table:nth-of-type(3) {
+  animation-delay: 120ms;
+}
+
+html,
+body,
+#root,
+.neo-app-shell,
+.neo-app-shell * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#root::-webkit-scrollbar,
+.neo-app-shell::-webkit-scrollbar,
+.neo-app-shell *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+@keyframes app-atmosphere {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(2.5vw, -1.4vh, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes panel-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 /* FullCalendar styling with Tailwind compatibility */
@@ -326,11 +546,13 @@ button:disabled {
 
 .fc .fc-button {
   padding-inline: 0.9rem !important;
-  border: 1px solid var(--mac-border) !important;
-  box-shadow: none !important;
-  background: #ffffff !important;
+  border: 1px solid rgba(101, 137, 173, 0.58) !important;
+  box-shadow: 0 10px 18px -20px rgba(18, 50, 84, 0.85) !important;
+  background: rgba(244, 250, 255, 0.72) !important;
   color: var(--mac-text) !important;
   text-transform: none !important;
+  backdrop-filter: blur(14px) saturate(158%);
+  -webkit-backdrop-filter: blur(14px) saturate(158%);
 }
 
 .calendar-toolbar-match-button {
@@ -351,8 +573,8 @@ button:disabled {
 }
 
 .fc-button-primary {
-  background-color: rgba(255, 255, 255, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.68) !important;
+  background-color: rgba(241, 249, 255, 0.72) !important;
+  border-color: rgba(122, 155, 188, 0.46) !important;
 }
 
 .fc-button-primary:not(:disabled):hover {
@@ -369,23 +591,23 @@ button:disabled {
 .fc-col-header-cell {
   background: transparent;
   font-weight: 600;
-  border: 1px solid #e5e5e5 !important;
+  border: 1px solid rgba(105, 140, 175, 0.5) !important;
 }
 
 .fc-daygrid-day {
-  border-color: #e5e5e5 !important;
+  border-color: rgba(137, 165, 194, 0.4) !important;
   background: transparent;
 }
 
 .fc-daygrid-day:hover {
-  background-color: #f4f8ff;
+  background-color: rgba(178, 214, 255, 0.2);
 }
 
 .fc-event {
-  background: rgba(0, 122, 255, 0.1) !important;
+  background: rgba(65, 141, 233, 0.18) !important;
   border: 0 !important;
-  border-left: 4px solid #007aff !important;
-  color: #004085 !important;
+  border-left: 4px solid #1768c9 !important;
+  color: #0a3967 !important;
   box-shadow: none !important;
   cursor: pointer;
   border-radius: 0 !important;
@@ -393,8 +615,8 @@ button:disabled {
 }
 
 .fc-event:hover {
-  background: rgba(0, 122, 255, 0.14) !important;
-  transform: none;
+  background: rgba(51, 130, 225, 0.26) !important;
+  transform: translateY(-1px);
 }
 
 .fc .fc-scrollgrid,
@@ -402,7 +624,7 @@ button:disabled {
 .fc .fc-timegrid-slot,
 .fc .fc-toolbar-title,
 .fc .fc-col-header-cell-cushion {
-  border-color: #e5e5e5 !important;
+  border-color: rgba(106, 141, 176, 0.5) !important;
   color: var(--mac-text) !important;
   font-weight: 600;
 }
@@ -410,7 +632,7 @@ button:disabled {
 .fc .fc-scrollgrid {
   border-radius: 0 !important;
   overflow: hidden;
-  border: 1px solid #e5e5e5 !important;
+  border: 1px solid rgba(132, 161, 191, 0.5) !important;
   background: transparent;
 }
 
