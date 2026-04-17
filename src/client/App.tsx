@@ -713,21 +713,6 @@ const noticeMonthByShortName: Record<string, number> = {
   DEC: 12,
 };
 
-const noticeShortMonthByIndex = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
 function parseNoticeDateParts(value: string) {
   const trimmed = value.trim();
   const isoDateMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
@@ -802,26 +787,6 @@ function isValidNoticeDate(year: number, month: number, day: number) {
     candidate.getMonth() === month - 1 &&
     candidate.getDate() === day
   );
-}
-
-function formatNoticeDate(value: string) {
-  const parts = parseNoticeDateParts(value);
-
-  if (!parts) {
-    return value;
-  }
-
-  if (!isValidNoticeDate(parts.year, parts.month, parts.day)) {
-    return value;
-  }
-
-  const month = noticeShortMonthByIndex[parts.month - 1];
-
-  if (!month) {
-    return value;
-  }
-
-  return `${parts.day.toString().padStart(2, "0")}-${month}-${parts.year}`;
 }
 
 function parseNoticeTimeParts(value: string) {
@@ -919,14 +884,19 @@ function NoticePage({
 
   const formatDisplayDate = (value: Date | string) => {
     if (value instanceof Date) {
-      const day = String(value.getDate()).padStart(2, "0");
-      const month = value.toLocaleString("en-US", { month: "short" });
-      const year = value.getFullYear();
-
-      return `${day}-${month}-${year}`;
+      return formatDate(value, config.dateFormat);
     }
 
-    return formatNoticeDate(value);
+    const parts = parseNoticeDateParts(value);
+
+    if (!parts || !isValidNoticeDate(parts.year, parts.month, parts.day)) {
+      return value;
+    }
+
+    return formatDate(
+      new Date(parts.year, parts.month - 1, parts.day),
+      config.dateFormat,
+    );
   };
 
   const resetForm = () => {
