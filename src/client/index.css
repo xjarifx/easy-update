@@ -332,14 +332,14 @@ button:disabled {
 }
 
 .fc-col-header-cell {
-  background: #ffffff;
+  background: transparent;
   font-weight: 600;
   border: 1px solid #e5e5e5 !important;
 }
 
 .fc-daygrid-day {
   border-color: #e5e5e5 !important;
-  background: #ffffff;
+  background: transparent;
 }
 
 .fc-daygrid-day:hover {
@@ -376,7 +376,7 @@ button:disabled {
   border-radius: 0 !important;
   overflow: hidden;
   border: 1px solid #e5e5e5 !important;
-  background: #ffffff;
+  background: transparent;
 }
 
 .fc .fc-event-main {
