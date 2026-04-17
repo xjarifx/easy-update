@@ -53,6 +53,24 @@ export const findNoticeByExactFields = async (input: {
   return (notice as NoticeRecord | undefined) ?? null;
 };
 
+export const findNoticesByDateAndTitle = async (input: {
+  date: string;
+  title: string;
+}) => {
+  const notices = await db
+    .select()
+    .from(noticesTable)
+    .where(
+      and(
+        eq(noticesTable.date, input.date),
+        eq(noticesTable.title, input.title),
+      ),
+    )
+    .orderBy(asc(noticesTable.id));
+
+  return notices as NoticeRecord[];
+};
+
 export const createNotice = async (input: {
   date: string;
   time: string;

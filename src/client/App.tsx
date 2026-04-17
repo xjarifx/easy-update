@@ -467,15 +467,28 @@ function InputPage({
       });
 
       const createdCount = response.createdCount ?? 0;
+      const updatedCount = response.updatedCount ?? 0;
       const failedCount = response.failedCount ?? 0;
       setRecentEvents(response.events ?? []);
-      setProcessStatus(
-        failedCount > 0
-          ? `Created ${createdCount} event${createdCount === 1 ? "" : "s"}. ${failedCount} event${failedCount === 1 ? "" : "s"} were skipped.`
-          : `Created ${createdCount} event${createdCount === 1 ? "" : "s"}.`,
-      );
+      const statusParts = [
+        `Created ${createdCount} event${createdCount === 1 ? "" : "s"}.`,
+      ];
 
-      if (createdCount > 0) {
+      if (updatedCount > 0) {
+        statusParts.push(
+          `Updated ${updatedCount} existing event${updatedCount === 1 ? "" : "s"}.`,
+        );
+      }
+
+      if (failedCount > 0) {
+        statusParts.push(
+          `${failedCount} event${failedCount === 1 ? "" : "s"} were skipped.`,
+        );
+      }
+
+      setProcessStatus(statusParts.join(" "));
+
+      if (createdCount > 0 || updatedCount > 0) {
         await onEventsCreated?.();
       }
     } catch (error) {

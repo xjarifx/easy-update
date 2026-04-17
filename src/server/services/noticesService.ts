@@ -3,6 +3,7 @@ import {
   createNotice,
   deleteNotice,
   findNoticeByExactFields,
+  findNoticesByDateAndTitle,
   findNoticeById,
   listNotices,
   updateNotice,
@@ -32,6 +33,10 @@ type NoticeInputValidationResult =
 type NoticeMutationResult =
   | { error: string; status?: number }
   | { value: NoticeRecord };
+
+type ExtractUpsertResult =
+  | { error: string; status?: number }
+  | { value: NoticeRecord; action: "created" | "updated" | "unchanged" };
 
 export const parseNoticeId = (value: string) => {
   const id = Number.parseInt(value, 10);
@@ -211,4 +216,67 @@ export const createNoticesFromExtractedEvents = async (
   const created = await createManyNotices(validatedEvents);
 
   return created.map(normalizeNotice);
+};
+
+const isNoTime = (value: string) => value.trim().toLowerCase() === "no time";
+
+export const upsertNoticeFromExtractedInput = async (
+  input: NoticeMutationInput,
+): Promise<ExtractUpsertResult> => {
+  const normalized = normalizeNoticeInput(input);
+
+  if ("error" in normalized) {
+    return normalized;
+  }
+
+  const normalizedInput = normalized.value;
+  const exactMatch = await findNoticeByExactFields({
+    date: normalizedInput.date,
+    time: normalizedInput.time,
+    title: normalizedInput.title,
+  });
+
+  if (exactMatch) {
+    const hasDifferentDetails =
+      exactMatch.moreInfo !== normalizedInput.moreInfo ||
+      exactMatch.completed !== normalizedInput.completed;
+
+    if (!hasDifferentDetails) {
+      return { value: normalizeNotice(exactMatch), action: "unchanged" };
+    }
+
+    const updated = await updateNotice(exactMatch.id, normalizedInput);
+
+    if (!updated) {
+      return { error: "Notice not found", status: 404 };
+    }
+
+    return { value: normalizeNotice(updated), action: "updated" };
+  }
+
+  const sameDateAndTitle = await findNoticesByDateAndTitle({
+    date: normalizedInput.date,
+    title: normalizedInput.title,
+  });
+
+  if (sameDateAndTitle.length > 0) {
+    const noticeToUpdate =
+      sameDateAndTitle.find((notice) => isNoTime(notice.time)) ??
+      sameDateAndTitle[0];
+
+    const updated = await updateNotice(noticeToUpdate.id, {
+      ...normalizedInput,
+      completed: noticeToUpdate.completed,
+    });
+
+    if (!updated) {
+      return { error: "Notice not found", status: 404 };
+    }
+
+    return { value: normalizeNotice(updated), action: "updated" };
+  }
+
+  const created = await createNotice(normalizedInput);
+
+  return { value: normalizeNotice(created), action: "created" };
 };

@@ -3,6 +3,7 @@ import type { NoticeItem, ProviderId } from "../types/domain";
 
 export type ExtractAndCreateEventsResponse = {
   createdCount: number;
+  updatedCount?: number;
   events: NoticeItem[];
   failedCount?: number;
   failed?: Array<{

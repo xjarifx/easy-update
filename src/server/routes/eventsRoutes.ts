@@ -9,6 +9,7 @@ import {
 import {
   createNoticeFromInput,
   getNotices,
+  upsertNoticeFromExtractedInput,
 } from "../services/noticesService.js";
 import { extractEvents } from "../services/eventExtractionService.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -127,12 +128,14 @@ eventsRouter.post(
     });
 
     if (extractedEvents.length === 0) {
-      res.json({ data: { createdCount: 0, events: [] } });
+      res.json({ data: { createdCount: 0, updatedCount: 0, events: [] } });
       return;
     }
 
     // Process each extracted event through the API validation pipeline
-    const created: NoticeRecord[] = [];
+    const processed: NoticeRecord[] = [];
+    let createdCount = 0;
+    let updatedCount = 0;
     const failed: Array<{ event: (typeof extractedEvents)[0]; error: string }> =
       [];
 
@@ -144,19 +147,26 @@ eventsRouter.post(
         moreInfo: event.moreInfo,
       };
 
-      const result = await createNoticeFromInput(input);
+      const result = await upsertNoticeFromExtractedInput(input);
 
       if ("error" in result) {
         failed.push({ event, error: result.error });
       } else {
-        created.push(result.value);
+        if (result.action === "created") {
+          createdCount += 1;
+          processed.push(result.value);
+        } else if (result.action === "updated") {
+          updatedCount += 1;
+          processed.push(result.value);
+        }
       }
     }
 
-    res.status(201).json({
+    res.status(200).json({
       data: {
-        createdCount: created.length,
-        events: created,
+        createdCount,
+        updatedCount,
+        events: processed,
         failedCount: failed.length,
         failed: failed.length > 0 ? failed : undefined,
       },
