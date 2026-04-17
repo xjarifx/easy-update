@@ -13,7 +13,7 @@
   --mac-accent-strong: #0066d6;
   --mac-danger: #ff453a;
   --mac-success: #30d158;
-  --mac-radius: 8px;
+  --mac-radius: 0px;
   --mac-shadow-soft:
     0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
@@ -80,7 +80,7 @@ small {
 .neo-modal,
 .neo-sidebar {
   border: 1px solid var(--mac-border-soft);
-  border-radius: var(--mac-radius);
+  border-radius: 0;
   background: var(--mac-surface);
   box-shadow: var(--mac-shadow-soft);
 }
@@ -106,7 +106,7 @@ select,
 textarea,
 [role="button"] {
   border: 1px solid var(--mac-border-soft) !important;
-  border-radius: var(--mac-radius) !important;
+  border-radius: 0 !important;
   box-shadow: none;
   outline: none;
 }
@@ -135,7 +135,7 @@ input::placeholder {
 button {
   background: var(--mac-accent);
   border-color: #007aff !important;
-  border-radius: 6px !important;
+  border-radius: 0 !important;
   color: #ffffff;
   cursor: pointer;
   font-weight: 700;
@@ -206,7 +206,7 @@ button:disabled {
   align-items: center;
   gap: 0.375rem;
   border: 1px solid #e6ebf3;
-  border-radius: 999px;
+  border-radius: 0;
   background: #f7f9fc;
   padding: 0.2rem 0.5rem;
   font-weight: 600;
@@ -218,7 +218,7 @@ button:disabled {
 
 .neo-table {
   border: 1px solid var(--mac-border-soft);
-  border-radius: var(--mac-radius);
+  border-radius: 0;
   box-shadow: var(--mac-shadow-soft);
   background: #ffffff;
   overflow: hidden;
@@ -302,7 +302,7 @@ button:disabled {
 
 .fc,
 .fc * {
-  border-radius: 8px !important;
+  border-radius: 0 !important;
 }
 
 .fc .fc-button {
@@ -353,7 +353,7 @@ button:disabled {
   color: #004085 !important;
   box-shadow: none !important;
   cursor: pointer;
-  border-radius: 6px !important;
+  border-radius: 0 !important;
   padding: 0.15rem 0.35rem !important;
 }
 
@@ -373,7 +373,7 @@ button:disabled {
 }
 
 .fc .fc-scrollgrid {
-  border-radius: var(--mac-radius) !important;
+  border-radius: 0 !important;
   overflow: hidden;
   border: 1px solid #e5e5e5 !important;
   background: #ffffff;

@@ -223,7 +223,7 @@ export default function Calendar({
 
       {/* Event List */}
       <aside className="h-full min-h-0">
-        <div className="neo-panel flex h-full flex-col p-6">
+        <div className="neo-panel flex h-full flex-col">
           <div className="mb-4 space-y-3">
             <button
               onClick={handleCreateEventClick}

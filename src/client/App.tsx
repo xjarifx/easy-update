@@ -572,7 +572,7 @@ function InputPage({
                 {recentEvents.map((event) => (
                   <div
                     key={event.id}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                    className="border border-slate-200 bg-white px-4 py-3"
                   >
                     {editingRecentEventId === event.id ? (
                       <div className="space-y-3">
@@ -881,7 +881,6 @@ type NoticePageProps = {
   notices: NoticeItem[];
   isLoading: boolean;
   error: string;
-  onRefresh: () => Promise<void>;
   onCreateNotice: (notice: NoticeMutationInput) => Promise<void>;
   onUpdateNotice: (id: number, notice: NoticeMutationInput) => Promise<void>;
   onDeleteNotice: (id: number) => Promise<void>;
@@ -891,7 +890,6 @@ function NoticePage({
   notices,
   isLoading,
   error,
-  onRefresh,
   onCreateNotice,
   onUpdateNotice,
   onDeleteNotice,
@@ -1039,7 +1037,7 @@ function NoticePage({
 
       <form
         onSubmit={handleSubmit}
-        className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 md:grid-cols-[160px_140px_minmax(0,1fr)_auto]"
+        className="grid gap-4 border border-slate-200 bg-white p-5 md:grid-cols-[160px_140px_minmax(0,1fr)_auto]"
       >
         <label className="neo-label grid gap-1 text-sm">
           Date
@@ -1119,7 +1117,7 @@ function NoticePage({
         ) : notices.length === 0 ? (
           <p className="text-sm text-slate-500">No notices available yet.</p>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="overflow-hidden border border-slate-200 bg-white">
             <div className="grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] border-b border-slate-200 px-4 py-4 text-xs tracking-wide text-slate-500 uppercase">
               <div>Done</div>
               <div>Date</div>
@@ -1367,18 +1365,18 @@ function SettingPage() {
       </div>
 
       <div className="grid gap-3 text-sm">
-        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+        <div className="border border-slate-200 bg-white p-3">
           Date format: DD-MMM-YYYY
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+        <div className="border border-slate-200 bg-white p-3">
           Time format: hh:mm AM/PM
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+        <div className="border border-slate-200 bg-white p-3">
           Font: SF Pro / Inter
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <div className="border border-slate-200 bg-white p-5">
         <h3 className="neo-label text-lg">API Key</h3>
         <p className="mt-1 text-sm font-semibold">
           Step 1: paste your OpenRouter API key. Step 2: load the free models
@@ -1389,7 +1387,7 @@ function SettingPage() {
         </p>
 
         <div className="mt-4 grid gap-4">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+          <div className="border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
             Provider: <span className="neo-label">OpenRouter</span>
             <span className="neo-pill ml-2 px-2 py-0.5 text-xs">
               free models only
@@ -1430,7 +1428,7 @@ function SettingPage() {
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="overflow-hidden border border-slate-200 bg-white">
             <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 text-xs text-slate-500">
               <span>
                 {filteredModels.length} suggestion
@@ -1629,7 +1627,7 @@ function App() {
           <h1 className="neo-label text-xl tracking-tight">Easy Update</h1>
           <div className="neo-pill mt-3 text-xs">
             <span
-              className={`h-2 w-2 rounded-full ${
+              className={`h-2 w-2 ${
                 apiStatus === "online"
                   ? "bg-emerald-500"
                   : apiStatus === "offline"
@@ -1670,7 +1668,6 @@ function App() {
               notices={sortedNotices}
               isLoading={isNoticesLoading}
               error={noticesError}
-              onRefresh={loadNotices}
               onCreateNotice={createNotice}
               onUpdateNotice={updateNotice}
               onDeleteNotice={deleteNotice}
