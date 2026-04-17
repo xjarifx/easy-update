@@ -72,7 +72,11 @@ export function SettingsPanel() {
         <select
           value={config.firstDayOfWeek}
           onChange={(e) =>
-            updateConfig({ firstDayOfWeek: parseInt(e.target.value) as any })
+            updateConfig({
+              firstDayOfWeek: Number(
+                e.target.value,
+              ) as typeof config.firstDayOfWeek,
+            })
           }
           className="w-full rounded-md border border-gray-300 px-3 py-2"
         >

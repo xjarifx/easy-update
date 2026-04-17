@@ -38,6 +38,11 @@ export type AppFontType = (typeof AppFont)[keyof typeof AppFont];
 export const FirstDayOfWeek = {
   SUNDAY: 0 as const,
   MONDAY: 1 as const,
+  TUESDAY: 2 as const,
+  WEDNESDAY: 3 as const,
+  THURSDAY: 4 as const,
+  FRIDAY: 5 as const,
+  SATURDAY: 6 as const,
 };
 
 export type FirstDayOfWeekType =
@@ -121,6 +126,11 @@ export function getFirstDayOfWeekOptions() {
   return [
     { label: "Sunday", value: FirstDayOfWeek.SUNDAY },
     { label: "Monday", value: FirstDayOfWeek.MONDAY },
+    { label: "Tuesday", value: FirstDayOfWeek.TUESDAY },
+    { label: "Wednesday", value: FirstDayOfWeek.WEDNESDAY },
+    { label: "Thursday", value: FirstDayOfWeek.THURSDAY },
+    { label: "Friday", value: FirstDayOfWeek.FRIDAY },
+    { label: "Saturday", value: FirstDayOfWeek.SATURDAY },
   ];
 }
 

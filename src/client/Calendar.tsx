@@ -302,6 +302,7 @@ export default function Calendar({
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             initialView="dayGridMonth"
+            firstDay={config.firstDayOfWeek}
             headerToolbar={{
               left: "prev,next today",
               center: "title",
