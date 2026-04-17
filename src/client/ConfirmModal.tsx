@@ -28,7 +28,7 @@ export function ConfirmModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
       <div className="neo-modal w-full max-w-md p-7">
         <h2 className="neo-label mb-4 text-xl">{title}</h2>
         <p className="mb-6 text-sm font-semibold">{message}</p>

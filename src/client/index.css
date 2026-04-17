@@ -361,9 +361,14 @@ button:disabled {
 .neo-panel,
 .neo-bento,
 .neo-modal {
-  background: rgba(247, 251, 255, 0.64);
+  background: rgba(247, 251, 255, 0.84);
   border-color: var(--mac-border-soft);
   box-shadow: var(--mac-shadow-soft);
+}
+
+.neo-modal {
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
 }
 
 .neo-nav-item {
