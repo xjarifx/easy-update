@@ -26,6 +26,7 @@ export type NoticeMutationInput = {
 
 export type ExtractedEvent = {
   title: string;
+  moreInfo: string;
   date: string;
   time: string;
 };

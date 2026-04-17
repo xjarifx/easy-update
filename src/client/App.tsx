@@ -85,6 +85,22 @@ function readSavedActivePage() {
   return "calendar";
 }
 
+function isNoTimeValue(value: string) {
+  return value.trim().toLowerCase() === "no time";
+}
+
+function formatNoticeTimeLabel(
+  date: string,
+  time: string,
+  format: Parameters<typeof formatTime>[1],
+) {
+  if (isNoTimeValue(time)) {
+    return "No time";
+  }
+
+  return formatTime(`${date}T${time}`, format);
+}
+
 function bytesToBase64(bytes: Uint8Array) {
   let binary = "";
 
@@ -714,8 +730,9 @@ function InputPage({
                           ) : null}
                           <p className="mt-1 text-xs font-semibold">
                             {formatDate(event.date, config.dateFormat)}{" "}
-                            {formatTime(
-                              event.date + "T" + event.time,
+                            {formatNoticeTimeLabel(
+                              event.date,
+                              event.time,
                               config.timeFormat,
                             )}
                           </p>
@@ -1088,10 +1105,7 @@ function NoticePage({
     setConfirmModal({
       isOpen: true,
       title: "Delete Notice",
-      message: `Delete "${notice.title}" on ${formatDisplayDate(notice.date)} at ${formatTime(
-        notice.date + "T" + notice.time,
-        config.timeFormat,
-      )}?`,
+      message: `Delete "${notice.title}" on ${formatDisplayDate(notice.date)} at ${formatNoticeTimeLabel(notice.date, notice.time, config.timeFormat)}?`,
       onConfirm: async () => {
         try {
           setIsConfirmLoading(true);
@@ -1367,8 +1381,9 @@ function NoticePage({
                     {formatDisplayDate(notice.date)}
                   </div>
                   <div>
-                    {formatTime(
-                      notice.date + "T" + notice.time,
+                    {formatNoticeTimeLabel(
+                      notice.date,
+                      notice.time,
                       config.timeFormat,
                     )}
                   </div>

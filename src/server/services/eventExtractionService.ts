@@ -93,8 +93,9 @@ const validateExtractedEvents = (input: unknown): ExtractedEvent[] => {
         return null;
       }
 
-      const { title, date, time } = item as {
+      const { title, moreInfo, date, time } = item as {
         title?: unknown;
+        moreInfo?: unknown;
         date?: unknown;
         time?: unknown;
       };
@@ -108,6 +109,8 @@ const validateExtractedEvents = (input: unknown): ExtractedEvent[] => {
       }
 
       const normalizedTitle = title.trim();
+      const normalizedMoreInfo =
+        typeof moreInfo === "string" ? moreInfo.trim() : "";
       const normalizedDate = toCanonicalNoticeDate(date);
       const normalizedTime = toCanonicalNoticeTime(time);
 
@@ -117,6 +120,7 @@ const validateExtractedEvents = (input: unknown): ExtractedEvent[] => {
 
       return {
         title: normalizedTitle,
+        moreInfo: normalizedMoreInfo,
         date: normalizedDate,
         time: normalizedTime,
       };

@@ -7,10 +7,10 @@ export const listNotices = async () => {
   const noticeOrderTimestamp = sql`
     COALESCE(
       CASE
-        WHEN ${noticesTable.date} ~ '^\\d{4}-\\d{1,2}-\\d{1,2}$' THEN to_timestamp(${noticesTable.date} || ' ' || ${noticesTable.time}, 'YYYY-MM-DD HH24:MI')
-        WHEN ${noticesTable.date} ~* '^\\d{1,2}-[A-Za-z]{3}-\\d{4}$' THEN to_timestamp(${noticesTable.date} || ' ' || ${noticesTable.time}, 'DD-Mon-YYYY HH24:MI')
-        WHEN ${noticesTable.date} ~ '^\\d{1,2}/\\d{1,2}/\\d{4}$' THEN to_timestamp(${noticesTable.date} || ' ' || ${noticesTable.time}, 'DD/MM/YYYY HH24:MI')
-        WHEN ${noticesTable.date} ~ '^\\d{4}/\\d{1,2}/\\d{1,2}$' THEN to_timestamp(${noticesTable.date} || ' ' || ${noticesTable.time}, 'YYYY/MM/DD HH24:MI')
+        WHEN ${noticesTable.date} ~ '^\\d{4}-\\d{1,2}-\\d{1,2}$' AND ${noticesTable.time} ~ '^\\d{1,2}:\\d{2}$' THEN to_timestamp(${noticesTable.date} || ' ' || ${noticesTable.time}, 'YYYY-MM-DD HH24:MI')
+        WHEN ${noticesTable.date} ~* '^\\d{1,2}-[A-Za-z]{3}-\\d{4}$' AND ${noticesTable.time} ~ '^\\d{1,2}:\\d{2}$' THEN to_timestamp(${noticesTable.date} || ' ' || ${noticesTable.time}, 'DD-Mon-YYYY HH24:MI')
+        WHEN ${noticesTable.date} ~ '^\\d{1,2}/\\d{1,2}/\\d{4}$' AND ${noticesTable.time} ~ '^\\d{1,2}:\\d{2}$' THEN to_timestamp(${noticesTable.date} || ' ' || ${noticesTable.time}, 'DD/MM/YYYY HH24:MI')
+        WHEN ${noticesTable.date} ~ '^\\d{4}/\\d{1,2}/\\d{1,2}$' AND ${noticesTable.time} ~ '^\\d{1,2}:\\d{2}$' THEN to_timestamp(${noticesTable.date} || ' ' || ${noticesTable.time}, 'YYYY/MM/DD HH24:MI')
         ELSE NULL
       END,
       to_timestamp('9999-12-31 23:59', 'YYYY-MM-DD HH24:MI')

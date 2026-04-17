@@ -16,6 +16,13 @@ import { ValidationError } from "../utils/errors.js";
 
 export const eventsRouter = Router();
 
+const toCalendarStart = (date: string, time: string) => {
+  const normalizedTime =
+    time.trim().toLowerCase() === "no time" ? "12:00" : time;
+
+  return `${date}T${normalizedTime}:00`;
+};
+
 eventsRouter.get(
   "/",
   asyncHandler(async (_req, res) => {
@@ -23,7 +30,7 @@ eventsRouter.get(
     const data: CalendarEventItem[] = notices.map((notice) => ({
       id: String(notice.id),
       title: notice.title,
-      start: `${notice.date}T${notice.time}:00`,
+      start: toCalendarStart(notice.date, notice.time),
       moreInfo: notice.moreInfo,
     }));
 
@@ -73,7 +80,7 @@ eventsRouter.post(
       data: {
         id: String(result.value.id),
         title: result.value.title,
-        start: `${result.value.date}T${result.value.time}:00`,
+        start: toCalendarStart(result.value.date, result.value.time),
         moreInfo: result.value.moreInfo,
       },
     });
@@ -134,6 +141,7 @@ eventsRouter.post(
         date: event.date,
         time: event.time,
         title: event.title,
+        moreInfo: event.moreInfo,
       };
 
       const result = await createNoticeFromInput(input);

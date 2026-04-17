@@ -203,6 +203,10 @@ export const toCanonicalNoticeDate = (value: string) => {
 };
 
 export const toCanonicalNoticeTime = (value: string) => {
+  if (value.trim().toLowerCase() === "no time") {
+    return "no time";
+  }
+
   const parsed = parseNoticeTimeParts(value);
 
   if (!parsed) {

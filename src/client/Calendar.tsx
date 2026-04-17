@@ -45,6 +45,7 @@ export interface CalendarEvent {
   end?: string;
   id: string;
   moreInfo: string;
+  hasNoTime: boolean;
   completed: boolean;
 }
 
@@ -58,6 +59,10 @@ function splitEventStart(start: string) {
     date: datePart,
     time: normalizedTime,
   };
+}
+
+function isNoTimeValue(value: string) {
+  return value.trim().toLowerCase() === "no time";
 }
 
 type CalendarProps = {
@@ -131,7 +136,11 @@ export default function Calendar({
     return formatTime(date, config.timeFormat);
   };
 
-  const formatEventLabel = (value: string) => {
+  const formatEventLabel = (value: string, hasNoTime: boolean) => {
+    if (hasNoTime) {
+      return `${formatDisplayDate(value)} No time`;
+    }
+
     if (value.includes("T")) {
       const date = new Date(value);
       return `${formatDisplayDate(date)} ${formatDisplayTime(date)}`;
@@ -163,9 +172,10 @@ export default function Calendar({
   };
 
   const events: CalendarEvent[] = notices.map((notice) => ({
+    hasNoTime: isNoTimeValue(notice.time),
     id: String(notice.id),
     title: notice.title,
-    start: `${notice.date}T${notice.time}:00`,
+    start: `${notice.date}T${isNoTimeValue(notice.time) ? "12:00" : notice.time}:00`,
     moreInfo: notice.moreInfo,
     completed: notice.completed,
   }));
@@ -249,7 +259,7 @@ export default function Calendar({
       message: `Delete "${event.title}" on ${formatDate(
         event.date,
         config.dateFormat,
-      )} at ${formatTime(event.date + "T" + event.time, config.timeFormat)}?`,
+      )} at ${isNoTimeValue(event.time) ? "No time" : formatTime(event.date + "T" + event.time, config.timeFormat)}?`,
       eventId: id,
       onConfirm: async () => {
         try {
@@ -377,7 +387,9 @@ export default function Calendar({
           eventInfo.event.extendedProps.completed ? "line-through" : ""
         }`}
       >
-        {formatCalendarEventTime(eventInfo.event.startStr)}
+        {eventInfo.event.extendedProps.hasNoTime
+          ? "No time"
+          : formatCalendarEventTime(eventInfo.event.startStr)}
       </strong>
       <span
         className={`fc-event-label-title ${
@@ -639,7 +651,7 @@ export default function Calendar({
                     >
                       <div className="min-w-0">
                         <p className="text-xs font-extrabold text-slate-900">
-                          {formatEventLabel(event.start)}
+                          {formatEventLabel(event.start, event.hasNoTime)}
                         </p>
                       </div>
                       <div className="min-w-0">

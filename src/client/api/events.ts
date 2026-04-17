@@ -8,6 +8,7 @@ export type ExtractAndCreateEventsResponse = {
   failed?: Array<{
     event: {
       title: string;
+      moreInfo: string;
       date: string;
       time: string;
     };

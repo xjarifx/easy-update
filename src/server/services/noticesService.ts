@@ -33,16 +33,6 @@ type NoticeMutationResult =
   | { error: string; status?: number }
   | { value: NoticeRecord };
 
-const isDateTimeInPast = (date: string, time: string) => {
-  const value = new Date(`${date}T${time}:00`);
-
-  if (Number.isNaN(value.getTime())) {
-    return false;
-  }
-
-  return value.getTime() < Date.now();
-};
-
 export const parseNoticeId = (value: string) => {
   const id = Number.parseInt(value, 10);
 
@@ -117,14 +107,6 @@ export const createNoticeFromInput = async (
 
   if ("error" in normalized) {
     return normalized;
-  }
-
-  if (isDateTimeInPast(normalized.value.date, normalized.value.time)) {
-    return {
-      error:
-        "Warning: date and time already passed. Please choose a future time.",
-      status: 400,
-    };
   }
 
   const duplicate = await findNoticeByExactFields({
@@ -202,6 +184,7 @@ export const createNoticesFromExtractedEvents = async (
       date: event.date,
       time: event.time,
       title: event.title,
+      moreInfo: event.moreInfo,
       completed: false,
     };
 
@@ -214,12 +197,6 @@ export const createNoticesFromExtractedEvents = async (
         `Skipping invalid extracted event: ${normalized.error}`,
         event,
       );
-      continue;
-    }
-
-    // Check if date/time is in the past
-    if (isDateTimeInPast(normalized.value.date, normalized.value.time)) {
-      console.warn(`Skipping past date event:`, event);
       continue;
     }
 
