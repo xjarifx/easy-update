@@ -223,7 +223,7 @@ export default function Calendar({
 
       {/* Event List */}
       <aside className="h-full min-h-0">
-        <div className="neo-panel flex h-full flex-col">
+        <div className="flex h-full flex-col bg-transparent">
           <div className="mb-4 space-y-3">
             <button
               onClick={handleCreateEventClick}
@@ -259,7 +259,7 @@ export default function Calendar({
               selectedDayEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="neo-card flex items-center justify-between p-3"
+                  className="flex items-center justify-between border border-slate-200 bg-transparent p-3"
                 >
                   <div>
                     <p className="neo-label">{event.title}</p>
