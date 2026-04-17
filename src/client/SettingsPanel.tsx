@@ -1,5 +1,13 @@
 import { useAppConfig } from "./config/AppConfigContext";
 import {
+  CalendarDays,
+  CalendarRange,
+  Clock3,
+  Info,
+  RotateCcw,
+  Type,
+} from "lucide-react";
+import {
   getDateFormatOptions,
   getTimeFormatOptions,
   getFontOptions,
@@ -12,7 +20,10 @@ export function SettingsPanel() {
   return (
     <div className="space-y-6 p-6">
       <div>
-        <h1 className="neo-label mb-1 text-2xl">App Configuration</h1>
+        <h1 className="neo-label mb-1 flex items-center gap-2 text-2xl">
+          <CalendarDays className="h-6 w-6" aria-hidden="true" />
+          App Configuration
+        </h1>
         <p className="mb-6 text-sm text-gray-500">
           Customize the look and feel of your app
         </p>
@@ -20,7 +31,10 @@ export function SettingsPanel() {
 
       {/* Date Format */}
       <div className="neo-card p-4">
-        <label className="neo-label mb-2 block">Date Format</label>
+        <label className="neo-label mb-2 flex items-center gap-2">
+          <CalendarRange className="h-4 w-4" aria-hidden="true" />
+          Date Format
+        </label>
         <select
           value={config.dateFormat}
           onChange={(e) => updateConfig({ dateFormat: e.target.value as any })}
@@ -36,7 +50,10 @@ export function SettingsPanel() {
 
       {/* Time Format */}
       <div className="neo-card p-4">
-        <label className="neo-label mb-2 block">Time Format</label>
+        <label className="neo-label mb-2 flex items-center gap-2">
+          <Clock3 className="h-4 w-4" aria-hidden="true" />
+          Time Format
+        </label>
         <select
           value={config.timeFormat}
           onChange={(e) => updateConfig({ timeFormat: e.target.value as any })}
@@ -52,7 +69,10 @@ export function SettingsPanel() {
 
       {/* Font */}
       <div className="neo-card p-4">
-        <label className="neo-label mb-2 block">Font</label>
+        <label className="neo-label mb-2 flex items-center gap-2">
+          <Type className="h-4 w-4" aria-hidden="true" />
+          Font
+        </label>
         <select
           value={config.font}
           onChange={(e) => updateConfig({ font: e.target.value as any })}
@@ -68,7 +88,10 @@ export function SettingsPanel() {
 
       {/* First Day of Week */}
       <div className="neo-card p-4">
-        <label className="neo-label mb-2 block">First Day of Week</label>
+        <label className="neo-label mb-2 flex items-center gap-2">
+          <CalendarDays className="h-4 w-4" aria-hidden="true" />
+          First Day of Week
+        </label>
         <select
           value={config.firstDayOfWeek}
           onChange={(e) =>
@@ -91,14 +114,19 @@ export function SettingsPanel() {
       {/* Reset Button */}
       <button
         onClick={resetConfig}
-        className="calendar-toolbar-match-button w-full px-4 py-2"
+        className="calendar-toolbar-match-button inline-flex w-full items-center justify-center gap-2 px-4 py-2"
       >
+        <RotateCcw className="h-4 w-4" aria-hidden="true" />
         Reset to Defaults
       </button>
 
       {/* Info Box */}
       <div className="neo-card border-blue-200 bg-blue-50 p-4">
         <p className="text-sm text-blue-900">
+          <Info
+            className="mr-1 inline h-4 w-4 align-text-bottom"
+            aria-hidden="true"
+          />
           <strong>Note:</strong> These settings will be applied across the
           entire app and saved to your browser's local storage. They will
           persist even after you close the app.

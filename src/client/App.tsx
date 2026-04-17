@@ -1,4 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Bot,
+  CalendarDays,
+  CheckCircle2,
+  CircleDashed,
+  ClipboardList,
+  Eraser,
+  FilePlus2,
+  KeyRound,
+  Mic,
+  MicOff,
+  Paperclip,
+  Pencil,
+  Play,
+  Settings2,
+  Sparkles,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import Calendar from "./Calendar";
 import { SettingsPanel } from "./SettingsPanel";
 import { apiRequest } from "./api/http";
@@ -498,19 +518,7 @@ function InputPage({
                   onClick={handleBrowseFiles}
                   className="inline-flex items-center gap-2 px-4 py-3 text-sm"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  >
-                    <path d="M12 5v14" />
-                    <path d="M5 12h14" />
-                  </svg>
+                  <Paperclip className="h-4 w-4" aria-hidden="true" />
                   Add doc or pic
                 </button>
 
@@ -526,28 +534,20 @@ function InputPage({
                         : "cursor-not-allowed bg-zinc-300"
                   }`}
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  >
-                    <path d="M12 18a4 4 0 0 0 4-4V8a4 4 0 1 0-8 0v6a4 4 0 0 0 4 4Z" />
-                    <path d="M19 11v1a7 7 0 0 1-14 0v-1" />
-                    <path d="M12 19v3" />
-                  </svg>
+                  {isListening ? (
+                    <MicOff className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Mic className="h-4 w-4" aria-hidden="true" />
+                  )}
                   {isListening ? "Stop voice" : "Voice mode"}
                 </button>
 
                 <button
                   type="button"
                   onClick={clearAllInputs}
-                  className="neo-button-secondary px-4 py-3 text-sm"
+                  className="neo-button-secondary inline-flex items-center gap-2 px-4 py-3 text-sm"
                 >
+                  <Eraser className="h-4 w-4" aria-hidden="true" />
                   Clear
                 </button>
               </div>
@@ -563,6 +563,11 @@ function InputPage({
                   images.length === 0
                 }
               >
+                {isProcessing ? (
+                  <XCircle className="mr-2 h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Play className="mr-2 h-4 w-4" aria-hidden="true" />
+                )}
                 {isProcessing ? "Cancel" : "Process"}
               </button>
             </div>
@@ -642,15 +647,23 @@ function InputPage({
                           <button
                             type="button"
                             onClick={cancelRecentEventEdit}
-                            className="neo-button-secondary px-3 py-1.5 text-xs"
+                            className="neo-button-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
                           >
+                            <XCircle
+                              className="h-3.5 w-3.5"
+                              aria-hidden="true"
+                            />
                             Cancel
                           </button>
                           <button
                             type="button"
                             onClick={() => void saveRecentEventEdit(event)}
-                            className="px-3 py-1.5 text-xs"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
                           >
+                            <CheckCircle2
+                              className="h-3.5 w-3.5"
+                              aria-hidden="true"
+                            />
                             Save
                           </button>
                         </div>
@@ -673,18 +686,24 @@ function InputPage({
                           <button
                             type="button"
                             onClick={() => startRecentEventEdit(event)}
-                            className="neo-button-secondary px-2.5 py-1 text-[11px]"
+                            className="neo-button-secondary inline-flex items-center gap-1 px-2.5 py-1 text-[11px]"
                           >
+                            <Pencil className="h-3 w-3" aria-hidden="true" />
                             Edit
                           </button>
                           <button
                             type="button"
                             onClick={() => void deleteRecentEvent(event)}
-                            className="neo-button-danger-ghost px-2 py-0.5 text-[11px]"
+                            className="neo-button-danger-ghost inline-flex items-center gap-1 px-2 py-0.5 text-[11px]"
                           >
+                            <Trash2 className="h-3 w-3" aria-hidden="true" />
                             Delete
                           </button>
                           <span className="neo-pill shrink-0 px-2 py-1 text-[11px]">
+                            <CheckCircle2
+                              className="mr-1 inline h-3 w-3"
+                              aria-hidden="true"
+                            />
                             Added
                           </span>
                         </div>
@@ -1022,7 +1041,10 @@ function NoticePage({
   return (
     <div className="mx-auto flex h-full flex-col gap-4 overflow-auto p-4 sm:p-6">
       <div>
-        <h2 className="neo-label text-2xl">Notice</h2>
+        <h2 className="neo-label flex items-center gap-2 text-2xl">
+          <ClipboardList className="h-6 w-6" aria-hidden="true" />
+          Notice
+        </h2>
         <p className="mt-1 text-sm font-semibold">
           Create, edit, and delete notices backed by your database.
         </p>
@@ -1072,9 +1094,14 @@ function NoticePage({
         <div className="flex items-end gap-2 md:col-span-4">
           <button
             type="submit"
-            className="px-4 py-2 text-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm"
             disabled={isSaving}
           >
+            {editingNoticeId === null ? (
+              <FilePlus2 className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+            )}
             {isSaving
               ? "Saving..."
               : editingNoticeId === null
@@ -1085,8 +1112,9 @@ function NoticePage({
             <button
               type="button"
               onClick={resetForm}
-              className="neo-button-secondary px-4 py-2 text-sm"
+              className="neo-button-secondary inline-flex items-center gap-2 px-4 py-2 text-sm"
             >
+              <XCircle className="h-4 w-4" aria-hidden="true" />
               Cancel
             </button>
           ) : null}
@@ -1157,15 +1185,17 @@ function NoticePage({
                     <button
                       type="button"
                       onClick={() => handleEdit(notice)}
-                      className="neo-button-secondary px-2 py-1 text-xs"
+                      className="neo-button-secondary inline-flex items-center gap-1 px-2 py-1 text-xs"
                     >
+                      <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => void handleDelete(notice)}
-                      className="neo-button-danger-ghost px-1.5 py-0.5 text-xs"
+                      className="neo-button-danger-ghost inline-flex items-center gap-1 px-1.5 py-0.5 text-xs"
                     >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       Delete
                     </button>
                   </div>
@@ -1365,14 +1395,20 @@ function SettingPage() {
         {/* API Settings */}
         <div className="p-4 sm:p-6">
           <div>
-            <h2 className="neo-label text-2xl">API Configuration</h2>
+            <h2 className="neo-label flex items-center gap-2 text-2xl">
+              <KeyRound className="h-6 w-6" aria-hidden="true" />
+              API Configuration
+            </h2>
             <p className="mt-1 text-sm font-semibold">
               Configure your AI provider, API key, and model selection.
             </p>
           </div>
 
           <div className="mt-6 border border-slate-200 bg-white p-5">
-            <h3 className="neo-label text-lg">API Key</h3>
+            <h3 className="neo-label flex items-center gap-2 text-lg">
+              <Bot className="h-5 w-5" aria-hidden="true" />
+              API Key
+            </h3>
             <p className="mt-1 text-sm font-semibold">
               Step 1: select your provider. Step 2: paste your API key. Step 3:
               select a model from the dropdown.
@@ -1463,11 +1499,11 @@ function App() {
   const [noticesError, setNoticesError] = useState("");
   const sortedNotices = useMemo(() => sortNoticesAsc(notices), [notices]);
 
-  const navItems: { id: Page; label: string }[] = [
-    { id: "input", label: "Input" },
-    { id: "notice", label: "Notice" },
-    { id: "calendar", label: "Calendar" },
-    { id: "setting", label: "Setting" },
+  const navItems: { id: Page; label: string; icon: LucideIcon }[] = [
+    { id: "input", label: "Input", icon: Sparkles },
+    { id: "notice", label: "Notice", icon: ClipboardList },
+    { id: "calendar", label: "Calendar", icon: CalendarDays },
+    { id: "setting", label: "Setting", icon: Settings2 },
   ];
 
   useEffect(() => {
@@ -1594,6 +1630,13 @@ function App() {
                     : "bg-amber-500"
               }`}
             />
+            {apiStatus === "checking" ? (
+              <CircleDashed className="h-3.5 w-3.5 animate-spin" />
+            ) : apiStatus === "online" ? (
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            ) : (
+              <XCircle className="h-3.5 w-3.5" />
+            )}
             API: {apiStatus}
           </div>
 
@@ -1608,6 +1651,7 @@ function App() {
                     : "neo-button-secondary"
                 }`}
               >
+                <item.icon className="mr-2 inline h-4 w-4" aria-hidden="true" />
                 {item.label}
               </button>
             ))}

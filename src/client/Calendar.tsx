@@ -1,4 +1,12 @@
 import { useMemo, useRef, useState } from "react";
+import {
+  CalendarClock,
+  CalendarPlus,
+  CheckCircle2,
+  Pencil,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -334,11 +342,13 @@ export default function Calendar({
           <div className="mb-4 space-y-3">
             <button
               onClick={handleCreateEventClick}
-              className="calendar-toolbar-match-button w-full px-4 py-2"
+              className="calendar-toolbar-match-button inline-flex w-full items-center justify-center gap-2 px-4 py-2"
             >
-              + Create Event
+              <CalendarPlus className="h-4 w-4" aria-hidden="true" />
+              Create Event
             </button>
-            <h2 className="neo-label mt-6 text-lg">
+            <h2 className="neo-label mt-6 flex items-center gap-2 text-lg">
+              <CalendarClock className="h-5 w-5" aria-hidden="true" />
               Events for {formatDisplayDate(selectedDate)}
             </h2>
             {isLoading ? (
@@ -410,17 +420,22 @@ export default function Calendar({
                         <button
                           type="button"
                           onClick={cancelEditEvent}
-                          className="neo-button-secondary px-3 py-1 text-xs"
+                          className="neo-button-secondary inline-flex items-center gap-1.5 px-3 py-1 text-xs"
                           disabled={isUpdating}
                         >
+                          <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
                           Cancel
                         </button>
                         <button
                           type="button"
                           onClick={() => void saveEditEvent(event.id)}
-                          className="px-3 py-1 text-xs"
+                          className="inline-flex items-center gap-1.5 px-3 py-1 text-xs"
                           disabled={isUpdating}
                         >
+                          <CheckCircle2
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                          />
                           {isUpdating ? "Saving..." : "Save"}
                         </button>
                       </div>
@@ -435,15 +450,17 @@ export default function Calendar({
                         <button
                           type="button"
                           onClick={() => startEditEvent(event)}
-                          className="neo-button-secondary px-2 py-0.5 text-xs"
+                          className="neo-button-secondary inline-flex items-center gap-1 px-2 py-0.5 text-xs"
                         >
+                          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                           Edit
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteEvent(event.id)}
-                          className="neo-button-danger-ghost px-2 py-0.5 text-xs"
+                          className="neo-button-danger-ghost inline-flex items-center gap-1 px-2 py-0.5 text-xs"
                         >
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                           Delete
                         </button>
                       </div>
@@ -460,7 +477,10 @@ export default function Calendar({
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4 backdrop-blur-sm">
           <div className="neo-modal w-full max-w-md p-7">
-            <h2 className="neo-label mb-4 text-xl">Add Event</h2>
+            <h2 className="neo-label mb-4 flex items-center gap-2 text-xl">
+              <CalendarPlus className="h-5 w-5" aria-hidden="true" />
+              Add Event
+            </h2>
             <form onSubmit={handleAddEvent} className="space-y-4">
               <div>
                 <label className="neo-label block text-sm">Event Title</label>
@@ -500,16 +520,18 @@ export default function Calendar({
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2"
+                  className="inline-flex flex-1 items-center justify-center gap-2 px-4 py-2"
                   disabled={isSaving}
                 >
+                  <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                   {isSaving ? "Saving..." : "Add Event"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="neo-button-secondary flex-1 px-4 py-2"
+                  className="neo-button-secondary inline-flex flex-1 items-center justify-center gap-2 px-4 py-2"
                 >
+                  <XCircle className="h-4 w-4" aria-hidden="true" />
                   Cancel
                 </button>
               </div>
