@@ -1679,6 +1679,7 @@ function App() {
               isLoading={isNoticesLoading}
               error={noticesError}
               onCreateNotice={createNotice}
+              onUpdateNotice={updateNotice}
               onDeleteNotice={deleteNotice}
             />
           )}

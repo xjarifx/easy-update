@@ -3,7 +3,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import type { NoticeItem } from "./types/domain";
+import type { NoticeItem, NoticeMutationInput } from "./types/domain";
 
 function formatLocalDate(date: Date) {
   const year = date.getFullYear();
@@ -60,6 +60,16 @@ export interface CalendarEvent {
   id: string;
 }
 
+function splitEventStart(start: string) {
+  const [datePart, timePart = "09:00"] = start.split("T");
+  const normalizedTime = timePart.slice(0, 5);
+
+  return {
+    date: datePart,
+    time: normalizedTime,
+  };
+}
+
 type CalendarProps = {
   notices: NoticeItem[];
   isLoading: boolean;
@@ -69,6 +79,7 @@ type CalendarProps = {
     time: string;
     description: string;
   }) => Promise<void>;
+  onUpdateNotice: (id: number, notice: NoticeMutationInput) => Promise<void>;
   onDeleteNotice: (id: number) => Promise<void>;
 };
 
@@ -77,6 +88,7 @@ export default function Calendar({
   isLoading,
   error,
   onCreateNotice,
+  onUpdateNotice,
   onDeleteNotice,
 }: CalendarProps) {
   const calendarRef = useRef(null);
@@ -89,6 +101,13 @@ export default function Calendar({
     date: getTodayLocalDate(),
     time: "09:00",
   });
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    title: "",
+    date: getTodayLocalDate(),
+    time: "09:00",
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const events: CalendarEvent[] = notices.map((notice) => ({
     id: String(notice.id),
@@ -180,6 +199,65 @@ export default function Calendar({
     }
   };
 
+  const startEditEvent = (event: CalendarEvent) => {
+    const { date, time } = splitEventStart(event.start);
+
+    setEditingEventId(event.id);
+    setEditFormData({
+      title: event.title,
+      date,
+      time,
+    });
+  };
+
+  const cancelEditEvent = () => {
+    setEditingEventId(null);
+    setEditFormData({
+      title: "",
+      date: getTodayLocalDate(),
+      time: "09:00",
+    });
+  };
+
+  const saveEditEvent = async (eventId: string) => {
+    if (!editFormData.title.trim()) {
+      setSubmitError("Please enter an event title.");
+      return;
+    }
+
+    if (!editFormData.date || !editFormData.time) {
+      setSubmitError("Date and time are required.");
+      return;
+    }
+
+    const existingNotice = notices.find(
+      (notice) => notice.id === Number(eventId),
+    );
+
+    if (!existingNotice) {
+      setSubmitError("Could not find the selected event.");
+      return;
+    }
+
+    try {
+      setIsUpdating(true);
+      setSubmitError("");
+      await onUpdateNotice(existingNotice.id, {
+        ...existingNotice,
+        description: editFormData.title.trim(),
+        date: editFormData.date,
+        time: editFormData.time,
+      });
+      setEditingEventId(null);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to update event.";
+      setSubmitError(message);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleCreateEventClick = () => {
     setFormData({
       title: "",
@@ -261,18 +339,87 @@ export default function Calendar({
                   key={event.id}
                   className="flex items-center justify-between border border-slate-200 bg-transparent p-3"
                 >
-                  <div>
-                    <p className="neo-label">{event.title}</p>
-                    <p className="text-sm font-semibold">
-                      {formatEventLabel(event.start)}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteEvent(event.id)}
-                    className="neo-button-danger-ghost px-2 py-0.5 text-xs"
-                  >
-                    Delete
-                  </button>
+                  {editingEventId === event.id ? (
+                    <div className="w-full space-y-3">
+                      <input
+                        type="text"
+                        value={editFormData.title}
+                        onChange={(e) =>
+                          setEditFormData((previous) => ({
+                            ...previous,
+                            title: e.target.value,
+                          }))
+                        }
+                        className="w-full px-3 py-2 text-sm"
+                        placeholder="Event title"
+                      />
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <input
+                          type="date"
+                          value={editFormData.date}
+                          onChange={(e) =>
+                            setEditFormData((previous) => ({
+                              ...previous,
+                              date: e.target.value,
+                            }))
+                          }
+                          className="px-3 py-2 text-sm"
+                        />
+                        <input
+                          type="time"
+                          value={editFormData.time}
+                          onChange={(e) =>
+                            setEditFormData((previous) => ({
+                              ...previous,
+                              time: e.target.value,
+                            }))
+                          }
+                          className="px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={cancelEditEvent}
+                          className="neo-button-secondary px-3 py-1 text-xs"
+                          disabled={isUpdating}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void saveEditEvent(event.id)}
+                          className="px-3 py-1 text-xs"
+                          disabled={isUpdating}
+                        >
+                          {isUpdating ? "Saving..." : "Save"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full space-y-2">
+                      <p className="text-sm font-semibold">
+                        {formatEventLabel(event.start)}
+                      </p>
+                      <p className="neo-label">{event.title}</p>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEditEvent(event)}
+                          className="neo-button-secondary px-2 py-0.5 text-xs"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEvent(event.id)}
+                          className="neo-button-danger-ghost px-2 py-0.5 text-xs"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             )}
