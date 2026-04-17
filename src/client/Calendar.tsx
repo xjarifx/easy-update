@@ -42,6 +42,7 @@ export interface CalendarEvent {
   start: string;
   end?: string;
   id: string;
+  completed: boolean;
 }
 
 function splitEventStart(start: string) {
@@ -154,6 +155,7 @@ export default function Calendar({
     id: String(notice.id),
     title: notice.description,
     start: `${notice.date}T${notice.time}:00`,
+    completed: notice.completed,
   }));
 
   const handleDateClick = (arg: { dateStr: string }) => {
@@ -311,6 +313,32 @@ export default function Calendar({
     }
   };
 
+  const toggleEventCompleted = async (event: CalendarEvent) => {
+    const existingNotice = notices.find(
+      (notice) => notice.id === Number(event.id),
+    );
+
+    if (!existingNotice) {
+      setSubmitError("Could not find the selected event.");
+      return;
+    }
+
+    try {
+      setIsUpdating(true);
+      setSubmitError("");
+      await onUpdateNotice(existingNotice.id, {
+        ...existingNotice,
+        completed: !existingNotice.completed,
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to update event.";
+      setSubmitError(message);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleCreateEventClick = () => {
     setFormData({
       title: "",
@@ -321,11 +349,25 @@ export default function Calendar({
   };
 
   const renderEventContent = (eventInfo: EventContentArg) => (
-    <span className="fc-event-label-wrap">
-      <strong className="fc-event-label-time">
+    <span
+      className={`fc-event-label-wrap ${
+        eventInfo.event.extendedProps.completed ? "opacity-65" : ""
+      }`}
+    >
+      <strong
+        className={`fc-event-label-time ${
+          eventInfo.event.extendedProps.completed ? "line-through" : ""
+        }`}
+      >
         {formatCalendarEventTime(eventInfo.event.startStr)}
       </strong>
-      <span className="fc-event-label-title">{eventInfo.event.title}</span>
+      <span
+        className={`fc-event-label-title ${
+          eventInfo.event.extendedProps.completed ? "line-through" : ""
+        }`}
+      >
+        {eventInfo.event.title}
+      </span>
     </span>
   );
 
@@ -404,7 +446,9 @@ export default function Calendar({
               selectedDayEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="border border-slate-200 bg-transparent p-3"
+                  className={`border border-slate-200 bg-transparent p-3 ${
+                    event.completed ? "opacity-70" : ""
+                  }`}
                 >
                   {editingEventId === event.id ? (
                     <div className="w-full space-y-3">
@@ -470,11 +514,41 @@ export default function Calendar({
                     </div>
                   ) : (
                     <div className="w-full space-y-2">
-                      <p className="text-sm font-semibold">
+                      <p
+                        className={`text-sm font-semibold ${
+                          event.completed ? "text-slate-500 line-through" : ""
+                        }`}
+                      >
                         {formatEventLabel(event.start)}
                       </p>
-                      <p className="neo-label">{event.title}</p>
+                      <p
+                        className={`neo-label ${
+                          event.completed ? "text-slate-500 line-through" : ""
+                        }`}
+                      >
+                        {event.title}
+                      </p>
+                      {event.completed ? (
+                        <p className="text-xs font-semibold text-emerald-700">
+                          Completed
+                        </p>
+                      ) : null}
                       <div className="flex justify-start gap-2">
+                        <label className="inline-flex items-center gap-2 text-xs font-semibold">
+                          <input
+                            type="checkbox"
+                            checked={event.completed}
+                            onChange={() => void toggleEventCompleted(event)}
+                            className="h-4 w-4"
+                            disabled={isUpdating}
+                            aria-label={
+                              event.completed
+                                ? "Mark event as incomplete"
+                                : "Mark event as complete"
+                            }
+                          />
+                          Complete
+                        </label>
                         <button
                           type="button"
                           onClick={() => startEditEvent(event)}
