@@ -455,7 +455,7 @@ export default function Calendar({
             <select
               value={calendarView}
               onChange={handleCalendarViewChange}
-              className="px-2 py-1.5 text-sm text-black"
+              className="px-2 py-2.5 text-sm text-black"
               aria-label="Select calendar view"
             >
               <option value="dayGridMonth">Month</option>
@@ -630,7 +630,7 @@ export default function Calendar({
                           type="checkbox"
                           checked={event.completed}
                           onChange={() => void toggleEventCompleted(event)}
-                          className="h-5 w-5 shrink-0"
+                          className="h-5.5 w-5.5 shrink-0"
                           disabled={isUpdating}
                           aria-label={
                             event.completed
