@@ -932,6 +932,7 @@ function NoticePage({
     onConfirm: async () => {},
   });
   const [isConfirmLoading, setIsConfirmLoading] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [formData, setFormData] = useState({
     date: getTodayLocalDate(),
     time: "09:00",
@@ -942,6 +943,17 @@ function NoticePage({
     () => sortNoticesAsc(notices),
     [notices],
   );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isSelectionMode) {
+        setIsSelectionMode(false);
+        setSelectedIds(new Set());
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSelectionMode]);
 
   const formatDisplayDate = (value: Date | string) => {
     if (value instanceof Date) {
@@ -1078,7 +1090,20 @@ function NoticePage({
   };
 
   const handleRowClick = (id: number, e: React.MouseEvent) => {
-    if (e.ctrlKey || e.metaKey) {
+    const isModifierClick = e.ctrlKey || e.metaKey;
+    if (isModifierClick) {
+      e.preventDefault();
+      setIsSelectionMode(true);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
+        return next;
+      });
+    } else if (isSelectionMode) {
       e.preventDefault();
       setSelectedIds((prev) => {
         const next = new Set(prev);
@@ -1089,6 +1114,11 @@ function NoticePage({
         }
         return next;
       });
+    } else {
+      const notice = sortedNoticesForDisplay.find((n) => n.id === id);
+      if (notice) {
+        handleEdit(notice);
+      }
     }
   };
 
@@ -1237,12 +1267,27 @@ function NoticePage({
                 </button>
               </div>
             )}
-            {selectedIds.size === 0 && (
+            {!isSelectionMode && selectedIds.size === 0 && (
               <div className="border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-600">
                 <p>
-                  💡 Ctrl+Click (or Cmd+Click on Mac) rows to select multiple
-                  notices
+                  💡 Ctrl+Click (or Cmd+Click on Mac) to start selecting, then
+                  click rows. Press Esc to exit.
                 </p>
+              </div>
+            )}
+            {isSelectionMode && (
+              <div className="flex items-center justify-between border-b border-slate-200 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700">
+                <p>Selection Mode: Click rows to toggle, press Esc to exit</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSelectionMode(false);
+                    setSelectedIds(new Set());
+                  }}
+                  className="text-xs text-blue-600 underline hover:text-blue-800"
+                >
+                  Exit Mode
+                </button>
               </div>
             )}
             <div className="grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] border-b border-slate-200 px-4 py-4 text-xs tracking-wide text-slate-500 uppercase">
