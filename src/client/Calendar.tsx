@@ -3,6 +3,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import type { EventContentArg } from "@fullcalendar/core";
 import type { NoticeItem, NoticeMutationInput } from "./types/domain";
 
 function formatLocalDate(date: Date) {
@@ -51,6 +52,20 @@ function formatEventLabel(value: string) {
   }
 
   return `${formatDisplayDate(value)} 12:00 AM`;
+}
+
+function formatCalendarEventTime(value: string) {
+  const date = parseEventDate(value);
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const meridiem = hours >= 12 ? "pm" : "am";
+  const normalizedHour = hours % 12 === 0 ? 12 : hours % 12;
+
+  if (minutes === 0) {
+    return `${normalizedHour}${meridiem}`;
+  }
+
+  return `${normalizedHour}:${String(minutes).padStart(2, "0")}${meridiem}`;
 }
 
 export interface CalendarEvent {
@@ -267,6 +282,15 @@ export default function Calendar({
     setShowModal(true);
   };
 
+  const renderEventContent = (eventInfo: EventContentArg) => (
+    <span className="fc-event-label-wrap">
+      <strong className="fc-event-label-time">
+        {formatCalendarEventTime(eventInfo.event.startStr)}
+      </strong>
+      <span className="fc-event-label-title">{eventInfo.event.title}</span>
+    </span>
+  );
+
   return (
     <div className="grid h-full min-h-0 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="flex min-h-0 flex-1 flex-col">
@@ -287,6 +311,7 @@ export default function Calendar({
               minute: "2-digit",
               meridiem: "short",
             }}
+            eventContent={renderEventContent}
             dateClick={handleDateClick}
             eventClick={handleEventClick}
             dayCellClassNames={(arg) =>
