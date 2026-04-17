@@ -400,6 +400,10 @@ button:disabled {
   overflow: hidden;
 }
 
+.fc .fc-daygrid-event-dot {
+  display: none !important;
+}
+
 .fc .fc-event-main-frame,
 .fc .fc-event-title-container,
 .fc .fc-event-title,
