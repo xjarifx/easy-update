@@ -138,7 +138,7 @@ export default function Calendar({
 
   const formatEventLabel = (value: string, hasNoTime: boolean) => {
     if (hasNoTime) {
-      return `${formatDisplayDate(value)} No time`;
+      return `${formatDisplayDate(value)} NT`;
     }
 
     if (value.includes("T")) {
@@ -388,7 +388,7 @@ export default function Calendar({
         }`}
       >
         {eventInfo.event.extendedProps.hasNoTime
-          ? "No time"
+          ? "NT"
           : formatCalendarEventTime(eventInfo.event.startStr)}
       </strong>
       <span
@@ -398,12 +398,6 @@ export default function Calendar({
       >
         {eventInfo.event.title}
       </span>
-      {typeof eventInfo.event.extendedProps.moreInfo === "string" &&
-      eventInfo.event.extendedProps.moreInfo.trim() ? (
-        <span className="fc-event-label-more-info line-clamp-1 text-[11px] leading-tight opacity-80">
-          {eventInfo.event.extendedProps.moreInfo}
-        </span>
-      ) : null}
     </span>
   );
 
