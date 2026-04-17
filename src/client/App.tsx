@@ -144,15 +144,32 @@ async function saveEncryptedSettings(settings: {
 
 type InputPageProps = {
   onEventsCreated?: () => Promise<void> | void;
+  onUpdateRecentEvent?: (
+    id: number,
+    notice: NoticeMutationInput,
+  ) => Promise<void>;
+  onDeleteRecentEvent?: (id: number) => Promise<void>;
 };
 
-function InputPage({ onEventsCreated }: InputPageProps) {
+function InputPage({
+  onEventsCreated,
+  onUpdateRecentEvent,
+  onDeleteRecentEvent,
+}: InputPageProps) {
   const [textInput, setTextInput] = useState("");
   const [documents, setDocuments] = useState<File[]>([]);
   const [images, setImages] = useState<File[]>([]);
   const [processStatus, setProcessStatus] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [recentEvents, setRecentEvents] = useState<NoticeItem[]>([]);
+  const [editingRecentEventId, setEditingRecentEventId] = useState<
+    number | null
+  >(null);
+  const [recentEventDraft, setRecentEventDraft] = useState({
+    description: "",
+    date: "",
+    time: "",
+  });
   const [isListening, setIsListening] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const speechRecognitionRef = useRef<any>(null);
@@ -205,6 +222,85 @@ function InputPage({ onEventsCreated }: InputPageProps) {
     setImages([]);
     setProcessStatus("");
     setRecentEvents([]);
+    setEditingRecentEventId(null);
+  };
+
+  const startRecentEventEdit = (event: NoticeItem) => {
+    setEditingRecentEventId(event.id);
+    setRecentEventDraft({
+      description: event.description,
+      date: event.date,
+      time: event.time,
+    });
+  };
+
+  const cancelRecentEventEdit = () => {
+    setEditingRecentEventId(null);
+  };
+
+  const saveRecentEventEdit = async (event: NoticeItem) => {
+    if (!recentEventDraft.description.trim()) {
+      setProcessStatus("Description is required.");
+      return;
+    }
+
+    if (!recentEventDraft.date || !recentEventDraft.time) {
+      setProcessStatus("Date and time are required.");
+      return;
+    }
+
+    try {
+      await onUpdateRecentEvent?.(event.id, {
+        description: recentEventDraft.description.trim(),
+        date: recentEventDraft.date,
+        time: recentEventDraft.time,
+        completed: event.completed,
+      });
+
+      setRecentEvents((previous) =>
+        previous.map((item) =>
+          item.id === event.id
+            ? {
+                ...item,
+                description: recentEventDraft.description.trim(),
+                date: recentEventDraft.date,
+                time: recentEventDraft.time,
+              }
+            : item,
+        ),
+      );
+      setEditingRecentEventId(null);
+      setProcessStatus("Event updated.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to update event.";
+      setProcessStatus(`Update failed: ${message}`);
+    }
+  };
+
+  const deleteRecentEvent = async (event: NoticeItem) => {
+    const shouldDelete = window.confirm(
+      `Delete event "${event.description}" on ${event.date} ${event.time}?`,
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      await onDeleteRecentEvent?.(event.id);
+      setRecentEvents((previous) =>
+        previous.filter((item) => item.id !== event.id),
+      );
+      if (editingRecentEventId === event.id) {
+        setEditingRecentEventId(null);
+      }
+      setProcessStatus("Event deleted.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to delete event.";
+      setProcessStatus(`Delete failed: ${message}`);
+    }
   };
 
   const handleCancelProcess = () => {
@@ -283,6 +379,7 @@ function InputPage({ onEventsCreated }: InputPageProps) {
     setIsProcessing(true);
     setProcessStatus("Extracting event info and creating events...");
     setRecentEvents([]);
+    setEditingRecentEventId(null);
     const abortController = new AbortController();
     processAbortControllerRef.current = abortController;
 
@@ -469,7 +566,7 @@ function InputPage({ onEventsCreated }: InputPageProps) {
             ) : null}
           </div>
 
-          {recentEvents.length > 0 || processStatus ? (
+          {recentEvents.length > 0 ? (
             <div className="rounded-[28px] border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -477,9 +574,9 @@ function InputPage({ onEventsCreated }: InputPageProps) {
                     Newly added events
                   </p>
                   <p className="text-xs text-emerald-700">
-                    {recentEvents.length > 0
-                      ? `${recentEvents.length} event${recentEvents.length === 1 ? "" : "s"} created from the latest process run.`
-                      : "Processed events will appear here after extraction."}
+                    {recentEvents.length} event
+                    {recentEvents.length === 1 ? "" : "s"} created from the
+                    latest process run.
                   </p>
                 </div>
                 <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
@@ -488,17 +585,75 @@ function InputPage({ onEventsCreated }: InputPageProps) {
               </div>
 
               <div className="mt-4 space-y-3">
-                {recentEvents.length === 0 ? (
-                  <p className="text-sm leading-6 text-emerald-700">
-                    Extract an event brief and the new entries will show up here
-                    right away.
-                  </p>
-                ) : (
-                  recentEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm"
-                    >
+                {recentEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm"
+                  >
+                    {editingRecentEventId === event.id ? (
+                      <div className="space-y-3">
+                        <label className="grid gap-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                          Title
+                          <input
+                            type="text"
+                            value={recentEventDraft.description}
+                            onChange={(eventInput) =>
+                              setRecentEventDraft((previous) => ({
+                                ...previous,
+                                description: eventInput.target.value,
+                              }))
+                            }
+                            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                          />
+                        </label>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <label className="grid gap-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                            Date
+                            <input
+                              type="date"
+                              value={recentEventDraft.date}
+                              onChange={(eventInput) =>
+                                setRecentEventDraft((previous) => ({
+                                  ...previous,
+                                  date: eventInput.target.value,
+                                }))
+                              }
+                              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            />
+                          </label>
+                          <label className="grid gap-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                            Time
+                            <input
+                              type="time"
+                              value={recentEventDraft.time}
+                              onChange={(eventInput) =>
+                                setRecentEventDraft((previous) => ({
+                                  ...previous,
+                                  time: eventInput.target.value,
+                                }))
+                              }
+                              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            />
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={cancelRecentEventEdit}
+                            className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void saveRecentEventEdit(event)}
+                            className="rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-slate-900">
@@ -508,13 +663,29 @@ function InputPage({ onEventsCreated }: InputPageProps) {
                             {event.date} {event.time}
                           </p>
                         </div>
-                        <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700">
-                          Added
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startRecentEventEdit(event)}
+                            className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void deleteRecentEvent(event)}
+                            className="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-200"
+                          >
+                            Delete
+                          </button>
+                          <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700">
+                            Added
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))
-                )}
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           ) : null}
@@ -1529,7 +1700,11 @@ function App() {
 
         <section className="min-w-0 overflow-auto p-4 md:p-6">
           <div className={activePage === "input" ? "block" : "hidden"}>
-            <InputPage onEventsCreated={loadNotices} />
+            <InputPage
+              onEventsCreated={loadNotices}
+              onUpdateRecentEvent={updateNotice}
+              onDeleteRecentEvent={deleteNotice}
+            />
           </div>
           {activePage === "notice" && (
             <NoticePage
