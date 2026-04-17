@@ -44,6 +44,7 @@ export interface CalendarEvent {
   start: string;
   end?: string;
   id: string;
+  moreInfo: string;
   completed: boolean;
 }
 
@@ -66,7 +67,8 @@ type CalendarProps = {
   onCreateNotice: (notice: {
     date: string;
     time: string;
-    description: string;
+    title: string;
+    moreInfo?: string;
   }) => Promise<void>;
   onUpdateNotice: (id: number, notice: NoticeMutationInput) => Promise<void>;
   onDeleteNotice: (id: number) => Promise<void>;
@@ -91,12 +93,14 @@ export default function Calendar({
   const [selectedDate, setSelectedDate] = useState<string>(getTodayLocalDate());
   const [formData, setFormData] = useState({
     title: "",
+    moreInfo: "",
     date: getTodayLocalDate(),
     time: "09:00",
   });
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState({
     title: "",
+    moreInfo: "",
     date: getTodayLocalDate(),
     time: "09:00",
   });
@@ -160,8 +164,9 @@ export default function Calendar({
 
   const events: CalendarEvent[] = notices.map((notice) => ({
     id: String(notice.id),
-    title: notice.description,
+    title: notice.title,
     start: `${notice.date}T${notice.time}:00`,
+    moreInfo: notice.moreInfo,
     completed: notice.completed,
   }));
 
@@ -215,10 +220,12 @@ export default function Calendar({
       await onCreateNotice({
         date: formData.date,
         time: formData.time,
-        description: formData.title.trim(),
+        title: formData.title.trim(),
+        moreInfo: formData.moreInfo.trim(),
       });
       setFormData({
         title: "",
+        moreInfo: "",
         date: getTodayLocalDate(),
         time: "09:00",
       });
@@ -239,7 +246,7 @@ export default function Calendar({
     setConfirmModal({
       isOpen: true,
       title: "Delete Event",
-      message: `Delete "${event.description}" on ${formatDate(
+      message: `Delete "${event.title}" on ${formatDate(
         event.date,
         config.dateFormat,
       )} at ${formatTime(event.date + "T" + event.time, config.timeFormat)}?`,
@@ -267,6 +274,7 @@ export default function Calendar({
     setEditingEventId(event.id);
     setEditFormData({
       title: event.title,
+      moreInfo: event.moreInfo,
       date,
       time,
     });
@@ -276,6 +284,7 @@ export default function Calendar({
     setEditingEventId(null);
     setEditFormData({
       title: "",
+      moreInfo: "",
       date: getTodayLocalDate(),
       time: "09:00",
     });
@@ -306,7 +315,8 @@ export default function Calendar({
       setSubmitError("");
       await onUpdateNotice(existingNotice.id, {
         ...existingNotice,
-        description: editFormData.title.trim(),
+        title: editFormData.title.trim(),
+        moreInfo: editFormData.moreInfo.trim(),
         date: editFormData.date,
         time: editFormData.time,
       });
@@ -349,6 +359,7 @@ export default function Calendar({
   const handleCreateEventClick = () => {
     setFormData({
       title: "",
+      moreInfo: "",
       date: selectedDate,
       time: "09:00",
     });
@@ -375,6 +386,12 @@ export default function Calendar({
       >
         {eventInfo.event.title}
       </span>
+      {typeof eventInfo.event.extendedProps.moreInfo === "string" &&
+      eventInfo.event.extendedProps.moreInfo.trim() ? (
+        <span className="fc-event-label-more-info line-clamp-1 text-[11px] leading-tight opacity-80">
+          {eventInfo.event.extendedProps.moreInfo}
+        </span>
+      ) : null}
     </span>
   );
 
@@ -553,6 +570,17 @@ export default function Calendar({
                         className="w-full px-3 py-2 text-sm"
                         placeholder="Event title"
                       />
+                      <textarea
+                        value={editFormData.moreInfo}
+                        onChange={(e) =>
+                          setEditFormData((previous) => ({
+                            ...previous,
+                            moreInfo: e.target.value,
+                          }))
+                        }
+                        className="min-h-24 w-full px-3 py-2 text-sm"
+                        placeholder="Optional details, notes, or links"
+                      />
                       <div className="grid gap-2 sm:grid-cols-2">
                         <input
                           type="date"
@@ -624,6 +652,11 @@ export default function Calendar({
                         >
                           {event.title}
                         </p>
+                        {event.moreInfo ? (
+                          <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+                            {event.moreInfo}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <input
@@ -684,6 +717,17 @@ export default function Calendar({
                   placeholder="What is this event about?"
                   className="mt-1 block w-full px-3 py-2"
                   autoFocus
+                />
+              </div>
+              <div>
+                <label className="neo-label block text-sm">More Info</label>
+                <textarea
+                  value={formData.moreInfo}
+                  onChange={(e) =>
+                    setFormData({ ...formData, moreInfo: e.target.value })
+                  }
+                  placeholder="Optional notes, location, agenda, or links"
+                  className="mt-1 block w-full px-3 py-2"
                 />
               </div>
               <div>

@@ -35,3 +35,7 @@
 | View Events   | DB -> Repository -> Service -> Route -> UI                       |
 | AI Extraction | UI -> Route -> Service (call LLM) -> Service -> Repository -> DB |
 | Fetch Models  | UI -> Route -> Service (call provider API) -> UI                 |
+
+## Event Shape
+
+Notices now store a short `title` plus a `more_info` text field for optional context, notes, or links. The API surfaces this as `title` and `moreInfo` in the client-facing JSON contract.

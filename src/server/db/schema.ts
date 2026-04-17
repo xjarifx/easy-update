@@ -4,7 +4,8 @@ export const noticesTable = pgTable("events", {
   id: serial("id").primaryKey(),
   date: text("date").notNull(),
   time: text("time").notNull(),
-  description: text("description").notNull(),
+  title: text("title").notNull(),
+  moreInfo: text("more_info").notNull().default(""),
   completed: boolean("completed").notNull().default(false),
 });
 

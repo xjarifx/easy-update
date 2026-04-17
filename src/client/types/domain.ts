@@ -4,13 +4,15 @@ export type NoticeItem = {
   id: number;
   date: string;
   time: string;
-  description: string;
+  title: string;
+  moreInfo: string;
   completed: boolean;
 };
 
 export type NoticeMutationInput = {
   date: string;
   time: string;
-  description: string;
+  title: string;
+  moreInfo?: string;
   completed?: boolean;
 };

@@ -54,10 +54,10 @@ Quick start:
 
 - `GET /api/health` backend health check.
 - `GET /api/notices` returns notices from PostgreSQL.
-- `POST /api/notices` creates a notice with `{ date, time, event }`.
+- `POST /api/notices` creates a notice with `{ date, time, title, moreInfo }`.
 - `PUT /api/notices/:id` updates an existing notice.
 - `DELETE /api/notices/:id` deletes an existing notice.
 - `GET /api/events` returns calendar-shaped events derived from notices.
-- `POST /api/events` creates one event via notice creation `{ title, start }`.
+- `POST /api/events` creates one event via notice creation `{ title, moreInfo, start }`.
 - `POST /api/events/extract-and-create` extracts events from text and persists them.
 - `POST /api/providers/models` fetches model lists from external providers using `{ provider, apiKey }`.

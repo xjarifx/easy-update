@@ -22,8 +22,9 @@ eventsRouter.get(
     const notices = await getNotices();
     const data: CalendarEventItem[] = notices.map((notice) => ({
       id: String(notice.id),
-      title: notice.description,
+      title: notice.title,
       start: `${notice.date}T${notice.time}:00`,
+      moreInfo: notice.moreInfo,
     }));
 
     res.json({ data });
@@ -33,9 +34,10 @@ eventsRouter.get(
 eventsRouter.post(
   "/",
   asyncHandler(async (req, res) => {
-    const { title, start } = (req.body ?? {}) as {
+    const { title, start, moreInfo } = (req.body ?? {}) as {
       title?: unknown;
       start?: unknown;
+      moreInfo?: unknown;
     };
 
     if (typeof title !== "string" || !title.trim()) {
@@ -57,7 +59,8 @@ eventsRouter.post(
       time: `${String(dateValue.getHours()).padStart(2, "0")}:${String(
         dateValue.getMinutes(),
       ).padStart(2, "0")}`,
-      description: title.trim(),
+      title: title.trim(),
+      moreInfo: typeof moreInfo === "string" ? moreInfo.trim() : "",
     };
 
     const result = await createNoticeFromInput(input);
@@ -69,8 +72,9 @@ eventsRouter.post(
     res.status(201).json({
       data: {
         id: String(result.value.id),
-        title: result.value.description,
+        title: result.value.title,
         start: `${result.value.date}T${result.value.time}:00`,
+        moreInfo: result.value.moreInfo,
       },
     });
   }),
@@ -129,7 +133,7 @@ eventsRouter.post(
       const input: NoticeMutationInput = {
         date: event.date,
         time: event.time,
-        description: event.title,
+        title: event.title,
       };
 
       const result = await createNoticeFromInput(input);

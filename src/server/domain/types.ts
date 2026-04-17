@@ -11,14 +11,16 @@ export type NoticeRecord = {
   id: number;
   date: string;
   time: string;
-  description: string;
+  title: string;
+  moreInfo: string;
   completed: boolean;
 };
 
 export type NoticeMutationInput = {
   date: string;
   time: string;
-  description: string;
+  title: string;
+  moreInfo?: string;
   completed?: boolean;
 };
 
@@ -32,4 +34,5 @@ export type CalendarEventItem = {
   id: string;
   title: string;
   start: string;
+  moreInfo: string;
 };

@@ -36,7 +36,7 @@ export const findNoticeById = async (id: number) => {
 export const findNoticeByExactFields = async (input: {
   date: string;
   time: string;
-  description: string;
+  title: string;
 }) => {
   const [notice] = await db
     .select()
@@ -45,7 +45,7 @@ export const findNoticeByExactFields = async (input: {
       and(
         eq(noticesTable.date, input.date),
         eq(noticesTable.time, input.time),
-        eq(noticesTable.description, input.description),
+        eq(noticesTable.title, input.title),
       ),
     )
     .limit(1);
@@ -56,7 +56,8 @@ export const findNoticeByExactFields = async (input: {
 export const createNotice = async (input: {
   date: string;
   time: string;
-  description: string;
+  title: string;
+  moreInfo: string;
   completed: boolean;
 }) => {
   const [notice] = await db.insert(noticesTable).values(input).returning();
@@ -68,7 +69,8 @@ export const createManyNotices = async (
   values: Array<{
     date: string;
     time: string;
-    description: string;
+    title: string;
+    moreInfo: string;
     completed: boolean;
   }>,
 ) => {
@@ -86,7 +88,8 @@ export const updateNotice = async (
   input: {
     date: string;
     time: string;
-    description: string;
+    title: string;
+    moreInfo: string;
     completed: boolean;
   },
 ) => {

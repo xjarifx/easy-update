@@ -20,7 +20,8 @@ import {
 type NormalizedNoticeInput = {
   date: string;
   time: string;
-  description: string;
+  title: string;
+  moreInfo: string;
   completed: boolean;
 };
 
@@ -82,8 +83,8 @@ const normalizeNoticeInput = (
     return { error: "time is required" } as const;
   }
 
-  if (!input.description.trim()) {
-    return { error: "description is required" } as const;
+  if (!input.title.trim()) {
+    return { error: "title is required" } as const;
   }
 
   const normalizedDate = toCanonicalNoticeDate(input.date);
@@ -102,7 +103,8 @@ const normalizeNoticeInput = (
     value: {
       date: normalizedDate,
       time: normalizedTime,
-      description: input.description.trim(),
+      title: input.title.trim(),
+      moreInfo: input.moreInfo?.trim() ?? "",
       completed: typeof input.completed === "boolean" ? input.completed : false,
     },
   } as const;
@@ -128,13 +130,13 @@ export const createNoticeFromInput = async (
   const duplicate = await findNoticeByExactFields({
     date: normalized.value.date,
     time: normalized.value.time,
-    description: normalized.value.description,
+    title: normalized.value.title,
   });
 
   if (duplicate) {
     return {
       error:
-        "Duplicate notice already exists for the same date, time, and description.",
+        "Duplicate notice already exists for the same date, time, and title.",
       status: 409,
     };
   }
@@ -157,13 +159,13 @@ export const updateNoticeFromInput = async (
   const duplicate = await findNoticeByExactFields({
     date: normalized.value.date,
     time: normalized.value.time,
-    description: normalized.value.description,
+    title: normalized.value.title,
   });
 
   if (duplicate && duplicate.id !== id) {
     return {
       error:
-        "Duplicate notice already exists for the same date, time, and description.",
+        "Duplicate notice already exists for the same date, time, and title.",
       status: 409,
     };
   }
@@ -199,7 +201,7 @@ export const createNoticesFromExtractedEvents = async (
     const input: NoticeMutationInput = {
       date: event.date,
       time: event.time,
-      description: event.title,
+      title: event.title,
       completed: false,
     };
 

@@ -205,7 +205,8 @@ function InputPage({
     number | null
   >(null);
   const [recentEventDraft, setRecentEventDraft] = useState({
-    description: "",
+    title: "",
+    moreInfo: "",
     date: "",
     time: "",
   });
@@ -267,7 +268,8 @@ function InputPage({
   const startRecentEventEdit = (event: NoticeItem) => {
     setEditingRecentEventId(event.id);
     setRecentEventDraft({
-      description: event.description,
+      title: event.title,
+      moreInfo: event.moreInfo ?? "",
       date: event.date,
       time: event.time,
     });
@@ -278,8 +280,8 @@ function InputPage({
   };
 
   const saveRecentEventEdit = async (event: NoticeItem) => {
-    if (!recentEventDraft.description.trim()) {
-      setProcessStatus("Description is required.");
+    if (!recentEventDraft.title.trim()) {
+      setProcessStatus("Title is required.");
       return;
     }
 
@@ -290,7 +292,8 @@ function InputPage({
 
     try {
       await onUpdateRecentEvent?.(event.id, {
-        description: recentEventDraft.description.trim(),
+        title: recentEventDraft.title.trim(),
+        moreInfo: recentEventDraft.moreInfo.trim(),
         date: recentEventDraft.date,
         time: recentEventDraft.time,
         completed: event.completed,
@@ -301,7 +304,8 @@ function InputPage({
           item.id === event.id
             ? {
                 ...item,
-                description: recentEventDraft.description.trim(),
+                title: recentEventDraft.title.trim(),
+                moreInfo: recentEventDraft.moreInfo.trim(),
                 date: recentEventDraft.date,
                 time: recentEventDraft.time,
               }
@@ -319,7 +323,7 @@ function InputPage({
 
   const deleteRecentEvent = async (event: NoticeItem) => {
     const shouldDelete = window.confirm(
-      `Delete event "${event.description}" on ${event.date} ${event.time}?`,
+      `Delete event "${event.title}" on ${event.date} ${event.time}?`,
     );
 
     if (!shouldDelete) {
@@ -618,14 +622,28 @@ function InputPage({
                           Title
                           <input
                             type="text"
-                            value={recentEventDraft.description}
+                            value={recentEventDraft.title}
                             onChange={(eventInput) =>
                               setRecentEventDraft((previous) => ({
                                 ...previous,
-                                description: eventInput.target.value,
+                                title: eventInput.target.value,
                               }))
                             }
                             className="px-3 py-2 text-sm"
+                          />
+                        </label>
+                        <label className="neo-label grid gap-1 text-xs tracking-wide uppercase">
+                          More info
+                          <textarea
+                            value={recentEventDraft.moreInfo}
+                            onChange={(eventInput) =>
+                              setRecentEventDraft((previous) => ({
+                                ...previous,
+                                moreInfo: eventInput.target.value,
+                              }))
+                            }
+                            className="min-h-24 px-3 py-2 text-sm"
+                            placeholder="Optional details, links, or context"
                           />
                         </label>
                         <div className="grid gap-2 sm:grid-cols-2">
@@ -687,8 +705,13 @@ function InputPage({
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="neo-label truncate text-sm">
-                            {event.description}
+                            {event.title}
                           </p>
+                          {event.moreInfo ? (
+                            <p className="mt-1 line-clamp-2 text-xs font-medium text-slate-600">
+                              {event.moreInfo}
+                            </p>
+                          ) : null}
                           <p className="mt-1 text-xs font-semibold">
                             {formatDate(event.date, config.dateFormat)}{" "}
                             {formatTime(
@@ -936,7 +959,8 @@ function NoticePage({
   const [formData, setFormData] = useState({
     date: getTodayLocalDate(),
     time: "09:00",
-    description: "",
+    title: "",
+    moreInfo: "",
     completed: false,
   });
   const sortedNoticesForDisplay = useMemo(
@@ -976,7 +1000,8 @@ function NoticePage({
     setFormData({
       date: getTodayLocalDate(),
       time: "09:00",
-      description: "",
+      title: "",
+      moreInfo: "",
       completed: false,
     });
     setEditingNoticeId(null);
@@ -986,8 +1011,8 @@ function NoticePage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.date || !formData.time || !formData.description.trim()) {
-      setActionError("Date, time, and description are required.");
+    if (!formData.date || !formData.time || !formData.title.trim()) {
+      setActionError("Date, time, and title are required.");
       return;
     }
 
@@ -999,14 +1024,16 @@ function NoticePage({
         await onCreateNotice({
           date: formData.date,
           time: formData.time,
-          description: formData.description.trim(),
+          title: formData.title.trim(),
+          moreInfo: formData.moreInfo.trim(),
           completed: formData.completed,
         });
       } else {
         await onUpdateNotice(editingNoticeId, {
           date: formData.date,
           time: formData.time,
-          description: formData.description.trim(),
+          title: formData.title.trim(),
+          moreInfo: formData.moreInfo.trim(),
           completed: formData.completed,
         });
       }
@@ -1026,7 +1053,8 @@ function NoticePage({
     setFormData({
       date: notice.date,
       time: notice.time,
-      description: notice.description,
+      title: notice.title,
+      moreInfo: notice.moreInfo ?? "",
       completed: notice.completed,
     });
     setActionError("");
@@ -1038,7 +1066,8 @@ function NoticePage({
       await onUpdateNotice(notice.id, {
         date: notice.date,
         time: notice.time,
-        description: notice.description,
+        title: notice.title,
+        moreInfo: notice.moreInfo,
         completed: !notice.completed,
       });
 
@@ -1059,7 +1088,7 @@ function NoticePage({
     setConfirmModal({
       isOpen: true,
       title: "Delete Notice",
-      message: `Delete "${notice.description}" on ${formatDisplayDate(notice.date)} at ${formatTime(
+      message: `Delete "${notice.title}" on ${formatDisplayDate(notice.date)} at ${formatTime(
         notice.date + "T" + notice.time,
         config.timeFormat,
       )}?`,
@@ -1189,15 +1218,27 @@ function NoticePage({
         </label>
 
         <label className="neo-label grid gap-1 text-sm">
-          Description
+          Title
           <input
             type="text"
-            value={formData.description}
+            value={formData.title}
             onChange={(e) =>
-              setFormData((prev) => ({ ...prev, description: e.target.value }))
+              setFormData((prev) => ({ ...prev, title: e.target.value }))
             }
-            placeholder="Enter notice description"
+            placeholder="Enter event title"
             className="px-3 py-2"
+          />
+        </label>
+
+        <label className="neo-label grid gap-1 text-sm md:col-span-3">
+          More info
+          <textarea
+            value={formData.moreInfo}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, moreInfo: e.target.value }))
+            }
+            placeholder="Add notes, location, links, or context"
+            className="min-h-28 px-3 py-2"
           />
         </label>
 
@@ -1290,11 +1331,12 @@ function NoticePage({
                 </button>
               </div>
             )}
-            <div className="grid grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] border-b border-slate-200 px-4 py-4 text-xs tracking-wide text-slate-500 uppercase">
+            <div className="grid grid-cols-[72px_140px_120px_minmax(0,1fr)_minmax(0,1fr)_150px] border-b border-slate-200 px-4 py-4 text-xs tracking-wide text-slate-500 uppercase">
               <div>Done</div>
               <div>Date</div>
               <div>Time</div>
-              <div>Description</div>
+              <div>Title</div>
+              <div>More info</div>
               <div>Actions</div>
             </div>
             <div>
@@ -1302,7 +1344,7 @@ function NoticePage({
                 <div
                   key={notice.id}
                   onClick={(e) => handleRowClick(notice.id, e)}
-                  className={`grid cursor-pointer grid-cols-[72px_140px_120px_minmax(0,1fr)_150px] items-center border-b border-slate-100 px-4 py-4 text-sm transition-colors last:border-b-0 hover:bg-slate-50 ${
+                  className={`grid cursor-pointer grid-cols-[72px_140px_120px_minmax(0,1fr)_minmax(0,1fr)_150px] items-center border-b border-slate-100 px-4 py-4 text-sm transition-colors last:border-b-0 hover:bg-slate-50 ${
                     selectedIds.has(notice.id)
                       ? "border-l-4 border-blue-500 bg-blue-100"
                       : ""
@@ -1315,7 +1357,7 @@ function NoticePage({
                         checked={notice.completed}
                         onChange={() => void handleToggleCompleted(notice)}
                         className="h-4 w-4"
-                        aria-label={`Mark notice ${notice.description} as ${
+                        aria-label={`Mark notice ${notice.title} as ${
                           notice.completed ? "not completed" : "completed"
                         }`}
                       />
@@ -1330,12 +1372,27 @@ function NoticePage({
                       config.timeFormat,
                     )}
                   </div>
-                  <div
-                    className={`truncate ${
-                      notice.completed ? "text-slate-400 line-through" : ""
-                    }`}
-                  >
-                    {notice.description}
+                  <div className="min-w-0">
+                    <div
+                      className={`truncate font-medium ${
+                        notice.completed
+                          ? "text-slate-400 line-through"
+                          : "text-slate-900"
+                      }`}
+                    >
+                      {notice.title}
+                    </div>
+                    {notice.moreInfo ? (
+                      <div
+                        className={`mt-1 truncate text-xs ${
+                          notice.completed
+                            ? "text-slate-300 line-through"
+                            : "text-slate-500"
+                        }`}
+                      >
+                        {notice.moreInfo}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
