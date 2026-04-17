@@ -469,7 +469,7 @@ function InputPage({
                 value={textInput}
                 onChange={(event) => setTextInput(event.target.value)}
                 placeholder="Paste a detailed event note, transcript, or schedule brief here."
-                className="h-full min-h-0 w-full flex-1 resize-none px-4 py-4 text-base leading-7"
+                className="h-full min-h-128 w-full flex-1 resize-none px-4 py-4 text-base leading-7"
               />
             </label>
 
