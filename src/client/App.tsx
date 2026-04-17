@@ -403,19 +403,25 @@ function InputPage({
     const trimmedText = textInput.trim();
 
     if (!trimmedText) {
-      setProcessStatus("Add text before processing.");
+      setProcessStatus(
+        "Add or dictate your event details first, then click Process.",
+      );
       return;
     }
 
     const savedSettings = readSavedSettings();
 
     if (!savedSettings?.selectedModel) {
-      setProcessStatus("Set API key and model in Setting before processing.");
+      setProcessStatus(
+        "Before processing, open Setting and complete API setup (provider, API key, and model).",
+      );
       return;
     }
 
     setIsProcessing(true);
-    setProcessStatus("Extracting event info and creating events...");
+    setProcessStatus(
+      "Processing your input: extracting event details and creating events...",
+    );
     setRecentEvents([]);
     setEditingRecentEventId(null);
     const abortController = new AbortController();
@@ -425,7 +431,9 @@ function InputPage({
       const decryptedApiKey = await decryptValue(savedSettings.apiKey);
 
       if (!decryptedApiKey.trim()) {
-        setProcessStatus("Saved API key is empty. Add API key in Setting.");
+        setProcessStatus(
+          "Your saved API key is empty. Go to Setting and enter a valid API key.",
+        );
         return;
       }
 
@@ -468,7 +476,7 @@ function InputPage({
     if (documents.length > 0 || images.length > 0) {
       setProcessStatus(
         (previous) =>
-          `${previous} File attachments are queued for the next extraction flow.`,
+          `${previous} Files are attached and ready for the next extraction flow.`,
       );
     }
   };
@@ -506,9 +514,13 @@ function InputPage({
               <textarea
                 value={textInput}
                 onChange={(event) => setTextInput(event.target.value)}
-                placeholder="Paste a detailed event note, transcript, or schedule brief here."
+                placeholder="Paste or dictate notes (meeting recap, message, or schedule) to turn them into events."
                 className="h-full min-h-128 w-full flex-1 resize-none px-4 py-4 text-base leading-7"
               />
+              <p className="text-xs font-semibold text-slate-600">
+                How it works: 1) Add text, 2) optionally attach files or use
+                voice, 3) click Process to create events.
+              </p>
             </label>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -519,7 +531,7 @@ function InputPage({
                   className="inline-flex items-center gap-2 px-4 py-3 text-sm"
                 >
                   <Paperclip className="h-4 w-4" aria-hidden="true" />
-                  Add doc or pic
+                  Add files
                 </button>
 
                 <button
@@ -539,7 +551,7 @@ function InputPage({
                   ) : (
                     <Mic className="h-4 w-4" aria-hidden="true" />
                   )}
-                  {isListening ? "Stop voice" : "Voice mode"}
+                  {isListening ? "Stop recording" : "Use voice"}
                 </button>
 
                 <button
@@ -548,7 +560,7 @@ function InputPage({
                   className="neo-button-secondary inline-flex items-center gap-2 px-4 py-3 text-sm"
                 >
                   <Eraser className="h-4 w-4" aria-hidden="true" />
-                  Clear
+                  Clear all
                 </button>
               </div>
 
@@ -568,7 +580,7 @@ function InputPage({
                 ) : (
                   <Play className="mr-2 h-4 w-4" aria-hidden="true" />
                 )}
-                {isProcessing ? "Cancel" : "Process"}
+                {isProcessing ? "Cancel" : "Process input"}
               </button>
             </div>
 
@@ -581,11 +593,13 @@ function InputPage({
             <div className="mt-6 space-y-3 border-t border-slate-200 pt-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="neo-label text-sm">Newly added events</p>
+                  <p className="neo-label text-sm">
+                    Events created in this run
+                  </p>
                   <p className="text-xs font-semibold">
                     {recentEvents.length} event
-                    {recentEvents.length === 1 ? "" : "s"} created from the
-                    latest process run.
+                    {recentEvents.length === 1 ? "" : "s"} created from your
+                    latest input.
                   </p>
                 </div>
                 <span className="neo-pill text-xs">{recentEvents.length}</span>
@@ -1046,7 +1060,7 @@ function NoticePage({
           Notice
         </h2>
         <p className="mt-1 text-sm font-semibold">
-          Create, edit, and delete notices backed by your database.
+          Add a notice with date/time, edit existing ones, or mark them done.
         </p>
       </div>
 
@@ -1122,7 +1136,9 @@ function NoticePage({
       </form>
 
       <div className="flex items-center justify-between">
-        <p className="neo-label text-xs">Total notices: {notices.length}</p>
+        <p className="neo-label text-xs">
+          Total notices in database: {notices.length}
+        </p>
       </div>
 
       <div>
@@ -1400,22 +1416,22 @@ function SettingPage() {
               API Configuration
             </h2>
             <p className="mt-1 text-sm font-semibold">
-              Configure your AI provider, API key, and model selection.
+              Set up your AI provider so Input can extract events from text.
             </p>
           </div>
 
           <div className="mt-6 border border-slate-200 bg-white p-5">
             <h3 className="neo-label flex items-center gap-2 text-lg">
               <Bot className="h-5 w-5" aria-hidden="true" />
-              API Key
+              API Setup
             </h3>
             <p className="mt-1 text-sm font-semibold">
-              Step 1: select your provider. Step 2: paste your API key. Step 3:
-              select a model from the dropdown.
+              Step 1: Choose a provider. Step 2: Paste your API key. Step 3:
+              Choose a model.
             </p>
             <p className="mt-1 text-xs font-semibold">
-              Available models are loaded automatically after provider and API
-              key are set.
+              Models load automatically after a valid provider and API key are
+              entered.
             </p>
 
             <div className="mt-4 grid gap-4">
@@ -1467,8 +1483,7 @@ function SettingPage() {
                   ))}
                 </select>
                 <p className="text-xs font-semibold">
-                  Select from models fetched using your selected provider and
-                  API key.
+                  Pick one model to use when converting input text into events.
                 </p>
               </label>
 

@@ -25,7 +25,7 @@ export function SettingsPanel() {
           App Configuration
         </h1>
         <p className="mb-6 text-sm text-gray-500">
-          Customize the look and feel of your app
+          Choose how dates, times, and typography are displayed across the app.
         </p>
       </div>
 
@@ -127,9 +127,8 @@ export function SettingsPanel() {
             className="mr-1 inline h-4 w-4 align-text-bottom"
             aria-hidden="true"
           />
-          <strong>Note:</strong> These settings will be applied across the
-          entire app and saved to your browser's local storage. They will
-          persist even after you close the app.
+          <strong>Note:</strong> Changes apply immediately to all pages and are
+          saved in your browser, so they stay after refresh or restart.
         </p>
       </div>
     </div>

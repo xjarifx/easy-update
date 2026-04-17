@@ -370,7 +370,8 @@ export default function Calendar({
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
             {selectedDayEvents.length === 0 ? (
               <p className="text-sm font-semibold">
-                No events for this date yet. Click Create Event to add one.
+                No events for this date yet. Select a day, then click Create
+                Event.
               </p>
             ) : (
               selectedDayEvents.map((event) => (
@@ -490,7 +491,7 @@ export default function Calendar({
                   onChange={(e) =>
                     setFormData({ ...formData, title: e.target.value })
                   }
-                  placeholder="Enter event title"
+                  placeholder="What is this event about?"
                   className="mt-1 block w-full px-3 py-2"
                   autoFocus
                 />
