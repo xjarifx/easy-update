@@ -446,8 +446,10 @@ export default function Calendar({
               selectedDayEvents.map((event) => (
                 <div
                   key={event.id}
-                  className={`border border-slate-200 bg-transparent p-3 ${
-                    event.completed ? "opacity-70" : ""
+                  className={`neo-card overflow-hidden p-4 transition-all ${
+                    event.completed
+                      ? "border-emerald-200 bg-emerald-50/55"
+                      : "border-slate-200 bg-white/65"
                   }`}
                 >
                   {editingEventId === event.id ? (
@@ -513,28 +515,29 @@ export default function Calendar({
                       </div>
                     </div>
                   ) : (
-                    <div className="w-full space-y-2">
-                      <p
-                        className={`text-sm font-semibold ${
-                          event.completed ? "text-slate-500 line-through" : ""
-                        }`}
-                      >
-                        {formatEventLabel(event.start)}
-                      </p>
-                      <p
-                        className={`neo-label ${
-                          event.completed ? "text-slate-500 line-through" : ""
-                        }`}
-                      >
-                        {event.title}
-                      </p>
-                      {event.completed ? (
-                        <p className="text-xs font-semibold text-emerald-700">
-                          Completed
-                        </p>
-                      ) : null}
-                      <div className="flex justify-start gap-2">
-                        <label className="inline-flex items-center gap-2 text-xs font-semibold">
+                    <div
+                      className={`border p-3 ${
+                        event.completed
+                          ? "border-emerald-200 bg-emerald-50/60"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 space-y-1">
+                          <p className="text-xs text-slate-500">
+                            {formatEventLabel(event.start)}
+                          </p>
+                          <p
+                            className={`text-sm leading-snug font-semibold ${
+                              event.completed
+                                ? "text-slate-500 line-through"
+                                : "text-slate-900"
+                            }`}
+                          >
+                            {event.title}
+                          </p>
+                        </div>
+                        <label className="flex shrink-0 items-center gap-2 text-xs text-slate-600">
                           <input
                             type="checkbox"
                             checked={event.completed}
@@ -549,10 +552,12 @@ export default function Calendar({
                           />
                           Complete
                         </label>
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() => startEditEvent(event)}
-                          className="neo-button-secondary inline-flex items-center gap-1 px-2 py-0.5 text-xs"
+                          className="neo-button-secondary inline-flex items-center gap-1 px-3 py-1 text-xs"
                         >
                           <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                           Edit
@@ -560,7 +565,7 @@ export default function Calendar({
                         <button
                           type="button"
                           onClick={() => handleDeleteEvent(event.id)}
-                          className="neo-button-danger-ghost inline-flex items-center gap-1 px-2 py-0.5 text-xs"
+                          className="neo-button-danger-ghost inline-flex items-center gap-1 px-3 py-1 text-xs"
                         >
                           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                           Delete
