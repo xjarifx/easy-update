@@ -510,7 +510,7 @@ function InputPage({
 
   return (
     <div
-      className="relative h-full overflow-hidden p-4 sm:p-6"
+      className="input-page-scrollbar-hidden relative h-full overflow-auto p-4 sm:p-6"
       onDragOver={(event) => {
         event.preventDefault();
       }}
@@ -519,9 +519,9 @@ function InputPage({
         handleFileUpload(event.dataTransfer.files);
       }}
     >
-      <div className="flex h-full min-h-0 flex-col gap-4">
-        <div className="flex min-h-0 flex-1 flex-col gap-4">
-          <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4">
             <input
               ref={fileInputRef}
               type="file"
@@ -531,12 +531,12 @@ function InputPage({
               onChange={(event) => handleFileUpload(event.target.files)}
             />
 
-            <label className="flex min-h-0 flex-1 flex-col gap-2">
+            <label className="flex flex-col gap-2">
               <textarea
                 value={textInput}
                 onChange={(event) => setTextInput(event.target.value)}
                 placeholder="Paste or dictate notes (meeting recap, message, or schedule) to turn them into events."
-                className="h-full min-h-128 w-full flex-1 resize-none px-4 py-4 text-base leading-7"
+                className="h-64 min-h-64 w-full resize-none px-4 py-4 text-base leading-7 sm:h-72"
               />
               <p className="text-xs font-semibold text-slate-600">
                 How it works: 1) Add text, 2) optionally attach files or use
@@ -877,37 +877,10 @@ function isValidNoticeDate(year: number, month: number, day: number) {
   );
 }
 
-function parseNoticeTimeParts(value: string) {
-  const trimmed = value.trim();
-  const timeMatch = trimmed.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
-
-  if (!timeMatch) {
-    return null;
-  }
-
-  const hour = Number(timeMatch[1]);
-  const minute = Number(timeMatch[2]);
-  const second = Number(timeMatch[3] ?? "0");
-
-  if (
-    hour < 0 ||
-    hour > 23 ||
-    minute < 0 ||
-    minute > 59 ||
-    second < 0 ||
-    second > 59
-  ) {
-    return null;
-  }
-
-  return { hour, minute, second };
-}
-
 function toNoticeSortTimestamp(notice: NoticeItem) {
   const dateParts = parseNoticeDateParts(notice.date);
-  const timeParts = parseNoticeTimeParts(notice.time);
 
-  if (!dateParts || !timeParts) {
+  if (!dateParts) {
     return Number.POSITIVE_INFINITY;
   }
 
@@ -919,9 +892,9 @@ function toNoticeSortTimestamp(notice: NoticeItem) {
     dateParts.year,
     dateParts.month - 1,
     dateParts.day,
-    timeParts.hour,
-    timeParts.minute,
-    timeParts.second,
+    0,
+    0,
+    0,
   ).getTime();
 }
 

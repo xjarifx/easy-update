@@ -1,1 +1,10 @@
 /* App-specific styles - FullCalendar styles moved to index.css */
+
+.input-page-scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.input-page-scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
