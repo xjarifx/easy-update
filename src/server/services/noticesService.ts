@@ -26,6 +26,10 @@ type NormalizedNoticeInput = {
   completed: boolean;
 };
 
+type UserScopedNoticeInput = NormalizedNoticeInput & {
+  userId: number;
+};
+
 type NoticeInputValidationResult =
   | { error: string }
   | { value: NormalizedNoticeInput };
@@ -55,14 +59,14 @@ const normalizeNotice = (notice: NoticeRecord): NoticeRecord => {
   };
 };
 
-export const getNotices = async () => {
-  const notices = await listNotices();
+export const getNotices = async (userId: number) => {
+  const notices = await listNotices(userId);
 
   return notices.map(normalizeNotice);
 };
 
-export const getNoticeById = async (id: number) => {
-  const notice = await findNoticeById(id);
+export const getNoticeById = async (id: number, userId: number) => {
+  const notice = await findNoticeById(id, userId);
 
   return notice ? normalizeNotice(notice) : null;
 };
@@ -106,6 +110,7 @@ const normalizeNoticeInput = (
 };
 
 export const createNoticeFromInput = async (
+  userId: number,
   input: NoticeMutationInput,
 ): Promise<NoticeMutationResult> => {
   const normalized = normalizeNoticeInput(input);
@@ -115,6 +120,7 @@ export const createNoticeFromInput = async (
   }
 
   const duplicate = await findNoticeByExactFields({
+    userId,
     date: normalized.value.date,
     time: normalized.value.time,
     title: normalized.value.title,
@@ -128,13 +134,17 @@ export const createNoticeFromInput = async (
     };
   }
 
-  const created = await createNotice(normalized.value);
+  const created = await createNotice({
+    userId,
+    ...normalized.value,
+  });
 
   return { value: normalizeNotice(created) } as NoticeMutationResult;
 };
 
 export const updateNoticeFromInput = async (
   id: number,
+  userId: number,
   input: NoticeMutationInput,
 ): Promise<NoticeMutationResult> => {
   const normalized = normalizeNoticeInput(input);
@@ -144,6 +154,7 @@ export const updateNoticeFromInput = async (
   }
 
   const duplicate = await findNoticeByExactFields({
+    userId,
     date: normalized.value.date,
     time: normalized.value.time,
     title: normalized.value.title,
@@ -157,7 +168,7 @@ export const updateNoticeFromInput = async (
     };
   }
 
-  const updated = await updateNotice(id, normalized.value);
+  const updated = await updateNotice(id, userId, normalized.value);
 
   if (!updated) {
     return { error: "Notice not found", status: 404 };
@@ -168,8 +179,9 @@ export const updateNoticeFromInput = async (
 
 export const deleteNoticeById = async (
   id: number,
+  userId: number,
 ): Promise<NoticeMutationResult> => {
-  const deleted = await deleteNotice(id);
+  const deleted = await deleteNotice(id, userId);
 
   if (!deleted) {
     return { error: "Notice not found", status: 404 };
@@ -179,9 +191,10 @@ export const deleteNoticeById = async (
 };
 
 export const createNoticesFromExtractedEvents = async (
+  userId: number,
   events: ExtractedEvent[],
 ) => {
-  const validatedEvents: NormalizedNoticeInput[] = [];
+  const validatedEvents: UserScopedNoticeInput[] = [];
 
   for (const event of events) {
     // Convert ExtractedEvent to NoticeMutationInput format for validation
@@ -205,7 +218,10 @@ export const createNoticesFromExtractedEvents = async (
       continue;
     }
 
-    validatedEvents.push(normalized.value);
+    validatedEvents.push({
+      ...normalized.value,
+      userId,
+    });
   }
 
   // Only insert valid events
@@ -221,6 +237,7 @@ export const createNoticesFromExtractedEvents = async (
 const isNoTime = (value: string) => value.trim().toLowerCase() === "no time";
 
 export const upsertNoticeFromExtractedInput = async (
+  userId: number,
   input: NoticeMutationInput,
 ): Promise<ExtractUpsertResult> => {
   const normalized = normalizeNoticeInput(input);
@@ -231,11 +248,11 @@ export const upsertNoticeFromExtractedInput = async (
 
   const normalizedInput = normalized.value;
   const exactMatch = await findNoticeByExactFields({
+    userId,
     date: normalizedInput.date,
     time: normalizedInput.time,
     title: normalizedInput.title,
   });
-
   if (exactMatch) {
     const hasDifferentDetails =
       exactMatch.moreInfo !== normalizedInput.moreInfo ||
@@ -245,7 +262,7 @@ export const upsertNoticeFromExtractedInput = async (
       return { value: normalizeNotice(exactMatch), action: "unchanged" };
     }
 
-    const updated = await updateNotice(exactMatch.id, normalizedInput);
+    const updated = await updateNotice(exactMatch.id, userId, normalizedInput);
 
     if (!updated) {
       return { error: "Notice not found", status: 404 };
@@ -255,20 +272,19 @@ export const upsertNoticeFromExtractedInput = async (
   }
 
   const sameDateAndTitle = await findNoticesByDateAndTitle({
+    userId,
     date: normalizedInput.date,
     title: normalizedInput.title,
   });
-
   if (sameDateAndTitle.length > 0) {
     const noticeToUpdate =
       sameDateAndTitle.find((notice) => isNoTime(notice.time)) ??
       sameDateAndTitle[0];
 
-    const updated = await updateNotice(noticeToUpdate.id, {
+    const updated = await updateNotice(noticeToUpdate.id, userId, {
       ...normalizedInput,
       completed: noticeToUpdate.completed,
     });
-
     if (!updated) {
       return { error: "Notice not found", status: 404 };
     }
@@ -276,7 +292,9 @@ export const upsertNoticeFromExtractedInput = async (
     return { value: normalizeNotice(updated), action: "updated" };
   }
 
-  const created = await createNotice(normalizedInput);
-
+  const created = await createNotice({
+    userId,
+    ...normalizedInput,
+  });
   return { value: normalizeNotice(created), action: "created" };
 };

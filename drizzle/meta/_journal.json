@@ -36,6 +36,20 @@
       "when": 1776380000000,
       "tag": "0004_title_and_more_info",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776571200000,
+      "tag": "0005_add_users_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776574800000,
+      "tag": "0006_scope_events_by_user",
+      "breakpoints": true
     }
   ]
 }

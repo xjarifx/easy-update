@@ -1,8 +1,10 @@
 import cors from "cors";
 import express from "express";
+import { authRouter } from "./routes/authRoutes.js";
 import { eventsRouter } from "./routes/eventsRoutes.js";
 import { noticesRouter } from "./routes/noticesRoutes.js";
 import { providersRouter } from "./routes/providersRoutes.js";
+import { requireAuthentication } from "./middleware/authMiddleware.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -18,6 +20,9 @@ app.get("/api/health", (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+app.use("/api/auth", authRouter);
+app.use("/api", requireAuthentication);
 
 app.use("/api/notices", noticesRouter);
 app.use("/api/events", eventsRouter);

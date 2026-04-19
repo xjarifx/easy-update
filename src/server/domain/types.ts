@@ -9,11 +9,19 @@ export const VALID_PROVIDERS: ProviderId[] = [
 
 export type NoticeRecord = {
   id: number;
+  userId: number;
   date: string;
   time: string;
   title: string;
   moreInfo: string;
   completed: boolean;
+};
+
+export type UserRecord = {
+  id: number;
+  email: string;
+  passwordHash: string;
+  createdAt: Date;
 };
 
 export type NoticeMutationInput = {

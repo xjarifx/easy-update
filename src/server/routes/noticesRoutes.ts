@@ -7,6 +7,7 @@ import {
   parseNoticeId,
   updateNoticeFromInput,
 } from "../services/noticesService.js";
+import { getAuthenticatedUserId } from "../middleware/authMiddleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError, NotFoundError } from "../utils/errors.js";
 
@@ -14,8 +15,9 @@ export const noticesRouter = Router();
 
 noticesRouter.get(
   "/",
-  asyncHandler(async (_req, res) => {
-    const data = await getNotices();
+  asyncHandler(async (req, res) => {
+    const userId = getAuthenticatedUserId(req);
+    const data = await getNotices(userId);
     res.json({ data });
   }),
 );
@@ -29,7 +31,8 @@ noticesRouter.get(
       throw new ValidationError("id must be a positive integer");
     }
 
-    const data = await getNoticeById(id);
+    const userId = getAuthenticatedUserId(req);
+    const data = await getNoticeById(id, userId);
 
     if (!data) {
       throw new NotFoundError("Notice");
@@ -42,7 +45,8 @@ noticesRouter.get(
 noticesRouter.post(
   "/",
   asyncHandler(async (req, res) => {
-    const result = await createNoticeFromInput(req.body ?? {});
+    const userId = getAuthenticatedUserId(req);
+    const result = await createNoticeFromInput(userId, req.body ?? {});
 
     if ("error" in result) {
       const status = result.status ?? 400;
@@ -64,7 +68,8 @@ noticesRouter.put(
       throw new ValidationError("id must be a positive integer");
     }
 
-    const result = await updateNoticeFromInput(id, req.body ?? {});
+    const userId = getAuthenticatedUserId(req);
+    const result = await updateNoticeFromInput(id, userId, req.body ?? {});
 
     if ("error" in result) {
       const status = result.status ?? 400;
@@ -86,7 +91,8 @@ noticesRouter.delete(
       throw new ValidationError("id must be a positive integer");
     }
 
-    const result = await deleteNoticeById(id);
+    const userId = getAuthenticatedUserId(req);
+    const result = await deleteNoticeById(id, userId);
 
     if ("error" in result) {
       const status = result.status ?? 400;

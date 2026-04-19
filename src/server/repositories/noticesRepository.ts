@@ -3,7 +3,7 @@ import { db } from "../db/index.js";
 import { noticesTable } from "../db/schema.js";
 import type { NoticeRecord } from "../domain/types.js";
 
-export const listNotices = async () => {
+export const listNotices = async (userId: number) => {
   const noticeOrderTimestamp = sql`
     COALESCE(
       CASE
@@ -20,20 +20,22 @@ export const listNotices = async () => {
   return (await db
     .select()
     .from(noticesTable)
+    .where(eq(noticesTable.userId, userId))
     .orderBy(noticeOrderTimestamp, asc(noticesTable.id))) as NoticeRecord[];
 };
 
-export const findNoticeById = async (id: number) => {
+export const findNoticeById = async (id: number, userId: number) => {
   const [notice] = await db
     .select()
     .from(noticesTable)
-    .where(eq(noticesTable.id, id))
+    .where(and(eq(noticesTable.id, id), eq(noticesTable.userId, userId)))
     .limit(1);
 
   return (notice as NoticeRecord | undefined) ?? null;
 };
 
 export const findNoticeByExactFields = async (input: {
+  userId: number;
   date: string;
   time: string;
   title: string;
@@ -43,6 +45,7 @@ export const findNoticeByExactFields = async (input: {
     .from(noticesTable)
     .where(
       and(
+        eq(noticesTable.userId, input.userId),
         eq(noticesTable.date, input.date),
         eq(noticesTable.time, input.time),
         eq(noticesTable.title, input.title),
@@ -54,6 +57,7 @@ export const findNoticeByExactFields = async (input: {
 };
 
 export const findNoticesByDateAndTitle = async (input: {
+  userId: number;
   date: string;
   title: string;
 }) => {
@@ -62,6 +66,7 @@ export const findNoticesByDateAndTitle = async (input: {
     .from(noticesTable)
     .where(
       and(
+        eq(noticesTable.userId, input.userId),
         eq(noticesTable.date, input.date),
         eq(noticesTable.title, input.title),
       ),
@@ -72,6 +77,7 @@ export const findNoticesByDateAndTitle = async (input: {
 };
 
 export const createNotice = async (input: {
+  userId: number;
   date: string;
   time: string;
   title: string;
@@ -85,6 +91,7 @@ export const createNotice = async (input: {
 
 export const createManyNotices = async (
   values: Array<{
+    userId: number;
     date: string;
     time: string;
     title: string;
@@ -103,6 +110,7 @@ export const createManyNotices = async (
 
 export const updateNotice = async (
   id: number,
+  userId: number,
   input: {
     date: string;
     time: string;
@@ -114,16 +122,16 @@ export const updateNotice = async (
   const [notice] = await db
     .update(noticesTable)
     .set(input)
-    .where(eq(noticesTable.id, id))
+    .where(and(eq(noticesTable.id, id), eq(noticesTable.userId, userId)))
     .returning();
 
   return (notice as NoticeRecord | undefined) ?? null;
 };
 
-export const deleteNotice = async (id: number) => {
+export const deleteNotice = async (id: number, userId: number) => {
   const [notice] = await db
     .delete(noticesTable)
-    .where(eq(noticesTable.id, id))
+    .where(and(eq(noticesTable.id, id), eq(noticesTable.userId, userId)))
     .returning();
 
   return (notice as NoticeRecord | undefined) ?? null;

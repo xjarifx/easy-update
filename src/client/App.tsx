@@ -9,6 +9,7 @@ import {
   Eraser,
   FilePlus2,
   KeyRound,
+  LogOut,
   Mic,
   MicOff,
   Paperclip,
@@ -22,6 +23,8 @@ import {
 import Calendar from "./Calendar";
 import { SettingsPanel } from "./SettingsPanel";
 import { ConfirmModal } from "./ConfirmModal";
+import { AuthScreen } from "./auth/AuthScreen";
+import { useAuth } from "./auth/AuthContext";
 import { apiRequest } from "./api/http";
 import { extractAndCreateEvents } from "./api/events";
 import { fetchProviderModels } from "./api/providers";
@@ -1755,6 +1758,7 @@ function SettingPage() {
 }
 
 function App() {
+  const { user, isAuthenticated, isInitializing, signOut } = useAuth();
   const [activePage, setActivePage] = useState<Page>(() =>
     readSavedActivePage(),
   );
@@ -1882,6 +1886,20 @@ function App() {
     };
   }, [loadNotices]);
 
+  if (isInitializing) {
+    return (
+      <main className="auth-shell min-h-screen items-center justify-center">
+        <div className="auth-card">
+          <p className="neo-label text-sm">Checking your session...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthScreen />;
+  }
+
   return (
     <main className="neo-app-shell h-screen w-screen overflow-hidden">
       <div className="grid h-full w-full md:grid-cols-[240px_minmax(0,1fr)]">
@@ -1923,6 +1941,19 @@ function App() {
               </button>
             ))}
           </nav>
+
+          <div className="mt-6 border-t border-slate-200 pt-4">
+            <p className="text-xs font-semibold text-slate-600">Signed in as</p>
+            <p className="neo-label mt-1 truncate text-sm">{user?.email}</p>
+            <button
+              type="button"
+              onClick={signOut}
+              className="neo-button-secondary mt-3 inline-flex w-full items-center justify-center gap-2 px-3 py-2 text-xs"
+            >
+              <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+              Sign out
+            </button>
+          </div>
         </aside>
 
         <section className="neo-page-stage h-full min-h-0 min-w-0 overflow-auto">

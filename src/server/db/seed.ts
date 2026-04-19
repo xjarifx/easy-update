@@ -1,6 +1,7 @@
 import "dotenv/config";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { noticesTable } from "./schema.js";
+import { noticesTable, usersTable } from "./schema.js";
 import { Pool } from "pg";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -62,9 +63,35 @@ const seed = async () => {
   const db = drizzle(pool);
 
   try {
+    const demoEmail = "demo@easy-update.local";
+    const [existingDemoUser] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, demoEmail))
+      .limit(1);
+
+    let demoUserId = existingDemoUser?.id;
+
+    if (!demoUserId) {
+      const [createdDemoUser] = await db
+        .insert(usersTable)
+        .values({
+          email: demoEmail,
+          passwordHash: "seed-user-password-not-for-login",
+        })
+        .returning({ id: usersTable.id });
+
+      demoUserId = createdDemoUser.id;
+    }
+
     const inserted = await db
       .insert(noticesTable)
-      .values(demoNotices)
+      .values(
+        demoNotices.map((notice) => ({
+          ...notice,
+          userId: demoUserId,
+        })),
+      )
       .returning();
 
     console.log(`Seed complete: inserted ${inserted.length} demo notices.`);

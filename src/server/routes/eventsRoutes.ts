@@ -12,6 +12,7 @@ import {
   upsertNoticeFromExtractedInput,
 } from "../services/noticesService.js";
 import { extractEvents } from "../services/eventExtractionService.js";
+import { getAuthenticatedUserId } from "../middleware/authMiddleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError } from "../utils/errors.js";
 
@@ -26,8 +27,9 @@ const toCalendarStart = (date: string, time: string) => {
 
 eventsRouter.get(
   "/",
-  asyncHandler(async (_req, res) => {
-    const notices = await getNotices();
+  asyncHandler(async (req, res) => {
+    const userId = getAuthenticatedUserId(req);
+    const notices = await getNotices(userId);
     const data: CalendarEventItem[] = notices.map((notice) => ({
       id: String(notice.id),
       title: notice.title,
@@ -71,7 +73,8 @@ eventsRouter.post(
       moreInfo: typeof moreInfo === "string" ? moreInfo.trim() : "",
     };
 
-    const result = await createNoticeFromInput(input);
+    const userId = getAuthenticatedUserId(req);
+    const result = await createNoticeFromInput(userId, input);
 
     if ("error" in result) {
       throw new ValidationError(result.error);
@@ -139,6 +142,8 @@ eventsRouter.post(
     const failed: Array<{ event: (typeof extractedEvents)[0]; error: string }> =
       [];
 
+    const userId = getAuthenticatedUserId(req);
+
     for (const event of extractedEvents) {
       const input: NoticeMutationInput = {
         date: event.date,
@@ -147,7 +152,7 @@ eventsRouter.post(
         moreInfo: event.moreInfo,
       };
 
-      const result = await upsertNoticeFromExtractedInput(input);
+      const result = await upsertNoticeFromExtractedInput(userId, input);
 
       if ("error" in result) {
         failed.push({ event, error: result.error });

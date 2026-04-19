@@ -9,6 +9,16 @@ type ApiResponse<T> = {
   error?: string | ApiError;
 };
 
+let authToken: string | null = null;
+
+export const setAuthToken = (token: string) => {
+  authToken = token;
+};
+
+export const clearAuthToken = () => {
+  authToken = null;
+};
+
 function getErrorMessage(payload: ApiResponse<unknown>, status: number) {
   if (!payload.error) {
     return `Request failed with status ${status}`;
@@ -25,7 +35,16 @@ export async function apiRequest<T>(
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<T> {
-  const response = await fetch(input, init);
+  const headers = new Headers(init?.headers);
+
+  if (authToken) {
+    headers.set("Authorization", `Bearer ${authToken}`);
+  }
+
+  const response = await fetch(input, {
+    ...init,
+    headers,
+  });
 
   // Handle 204 No Content and other empty responses
   if (
