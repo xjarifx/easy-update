@@ -7,13 +7,18 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Build outputs
 dist
-dist-client
-dist-server
 dist-ssr
+
+# Environment
 *.local
 .env
+
+# Data
 data/
 
 # Editor directories and files
@@ -26,3 +31,6 @@ data/
 *.njsproj
 *.sln
 *.sw?
+
+# TypeScript build info
+*.tsbuildinfo

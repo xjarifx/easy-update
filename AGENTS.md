@@ -4,24 +4,53 @@ React + TypeScript (Vite) frontend with Express API backend, Drizzle ORM, Postgr
 
 ## Project Structure
 
-- `src/client/` - Frontend (React, Vite, Tailwind CSS)
-- `src/server/` - Backend (Express API, Drizzle ORM)
-- `dist-client/` - Built frontend output
-- `dist-server/` - Built backend output
-- `drizzle/` - SQL migrations
+Monorepo with npm workspaces:
+
+```
+easy-update/
+├── apps/
+│   ├── client/          # Frontend (React, Vite, Tailwind CSS)
+│   │   ├── src/
+│   │   ├── public/
+│   │   ├── index.html
+│   │   ├── vite.config.ts
+│   │   ├── tsconfig.json
+│   │   └── package.json
+│   └── server/          # Backend (Express API, Drizzle ORM)
+│       ├── src/
+│       ├── tsconfig.json
+│       └── package.json
+├── packages/
+│   └── types/           # Shared domain types (@easy-update/types)
+├── scripts/             # Database utility scripts
+├── docs/                # Project documentation
+├── drizzle/             # SQL migrations
+├── drizzle.config.ts
+├── package.json         # Root workspace config
+├── tsconfig.json        # Solution-style references
+└── tsconfig.node.json   # Build tooling
+```
 
 ## Key Commands
 
-| Command               | Notes                                                 |
-| --------------------- | ----------------------------------------------------- |
-| `npm run dev`         | Builds first, then runs `dev:full`                    |
-| `npm run dev:full`    | Runs server + client concurrently                     |
-| `npm run dev:server`  | Backend only on port 4000                             |
-| `npm run build`       | Compiles `tsc -b && vite build`                       |
-| `npm run start`       | Builds first, then starts Express from `dist-server`  |
-| `npm run start:built` | Starts already-built Express (skips build)            |
-| `npm run lint`        | ESLint (ignores `dist`, `dist-client`, `dist-server`) |
-| `npm run format`      | Prettier + Tailwind class sorting                     |
+| Command               | Notes                                           |
+| --------------------- | ----------------------------------------------- |
+| `npm run dev`         | Runs `dev:full`                                 |
+| `npm run dev:full`    | Runs server + client concurrently               |
+| `npm run dev:client`  | Client only (Vite dev server)                   |
+| `npm run dev:server`  | Server only on port 4000                        |
+| `npm run build`       | Builds both client and server                   |
+| `npm run start`       | Builds first, then starts Express               |
+| `npm run start:built` | Starts already-built Express (skips build)      |
+| `npm run lint`        | ESLint                                          |
+| `npm run format`      | Prettier + Tailwind class sorting               |
+
+Workspace-specific commands:
+
+```bash
+npm run dev --workspace=@easy-update/client
+npm run build --workspace=@easy-update/server
+```
 
 ## Database (Drizzle + PostgreSQL)
 
@@ -35,7 +64,7 @@ npm run db:seed       # Seed demo data if notices table empty
 npm run db:studio     # Open Drizzle Studio
 ```
 
-Schema: `src/server/db/schema.ts`
+Schema: `apps/server/src/db/schema.ts`
 
 ## Architecture
 
@@ -46,10 +75,10 @@ Enforces one-way data flow:
 
 Code organization:
 
-- `src/client/api/*` - API client modules (frontend never talks to DB)
-- `src/server/routes/*` - Express route handlers
-- `src/server/services/*` - Business logic
-- `src/server/repositories/*` - Database access
+- `apps/client/src/api/*` - API client modules (frontend never talks to DB)
+- `apps/server/src/routes/*` - Express route handlers
+- `apps/server/src/services/*` - Business logic
+- `apps/server/src/repositories/*` - Database access
 
 ## API Endpoints
 
@@ -70,6 +99,7 @@ PORT=4000              # Server port (default: 4000)
 
 ## TypeScript Configs
 
-- `tsconfig.app.json` - Frontend (DOM, esnext modules, noEmit)
-- `tsconfig.server.json` - Backend (NodeNext, outputs to `dist-server/`)
+- `apps/client/tsconfig.json` - Frontend (DOM, esnext modules, noEmit)
+- `apps/server/tsconfig.json` - Backend (NodeNext, outputs to `dist/`)
 - `tsconfig.node.json` - Build tooling
+- `tsconfig.json` - Solution-style root (references all workspaces)

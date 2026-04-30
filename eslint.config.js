@@ -6,9 +6,9 @@ import tseslint from "typescript-eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
-  globalIgnores(["dist", "dist-client", "dist-server"]),
+  globalIgnores(["dist", "node_modules", "scripts"]),
   {
-    files: ["src/client/**/*.{ts,tsx}"],
+    files: ["apps/client/src/**/*.{ts,tsx}"],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
@@ -21,7 +21,15 @@ export default defineConfig([
     },
   },
   {
-    files: ["src/server/**/*.ts", "vite.config.ts"],
+    files: ["apps/server/src/**/*.ts"],
+    extends: [js.configs.recommended, tseslint.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.node,
+    },
+  },
+  {
+    files: ["vite.config.ts", "drizzle.config.ts", "*.js"],
     extends: [js.configs.recommended, tseslint.configs.recommended],
     languageOptions: {
       ecmaVersion: 2020,
