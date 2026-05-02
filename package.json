@@ -8,19 +8,19 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev:full",
+    "dev": "turbo run dev --parallel",
     "dev:client": "npm run dev --workspace=@easy-update/client",
     "dev:server": "tsx watch apps/server/src/index.ts",
     "dev:full": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "build": "npm run build --workspace=@easy-update/client && npm run build --workspace=@easy-update/server",
-    "start": "npm run build && npm run start:built",
+    "build": "turbo run build",
+    "start": "turbo run start",
     "start:built": "node apps/server/dist/index.js",
-    "lint": "eslint .",
+    "lint": "turbo run lint",
     "format": "prettier --write .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:seed": "tsx apps/server/src/db/seed.ts",
+    "db:seed": "turbo run db:seed",
     "db:studio": "drizzle-kit studio"
   },
   "devDependencies": {
@@ -33,6 +33,7 @@
     "globals": "^17.4.0",
     "prettier": "^3.8.2",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "typescript-eslint": "^8.58.0"
+    "typescript-eslint": "^8.58.0",
+    "turbo": "^1.10.1"
   }
 }
