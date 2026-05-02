@@ -190,50 +190,6 @@ export const deleteNoticeById = async (
   return { value: normalizeNotice(deleted) };
 };
 
-export const createNoticesFromExtractedEvents = async (
-  userId: number,
-  events: ExtractedEvent[],
-) => {
-  const validatedEvents: UserScopedNoticeInput[] = [];
-
-  for (const event of events) {
-    // Convert ExtractedEvent to NoticeMutationInput format for validation
-    const input: NoticeMutationInput = {
-      date: event.date,
-      time: event.time,
-      title: event.title,
-      moreInfo: event.moreInfo,
-      completed: false,
-    };
-
-    // Validate using the same pipeline as manual events
-    const normalized = normalizeNoticeInput(input);
-
-    if ("error" in normalized) {
-      // Log validation error but continue processing other events
-      console.warn(
-        `Skipping invalid extracted event: ${normalized.error}`,
-        event,
-      );
-      continue;
-    }
-
-    validatedEvents.push({
-      ...normalized.value,
-      userId,
-    });
-  }
-
-  // Only insert valid events
-  if (validatedEvents.length === 0) {
-    return [];
-  }
-
-  const created = await createManyNotices(validatedEvents);
-
-  return created.map(normalizeNotice);
-};
-
 const isNoTime = (value: string) => value.trim().toLowerCase() === "no time";
 
 export const upsertNoticeFromExtractedInput = async (

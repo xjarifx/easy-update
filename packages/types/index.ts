@@ -27,14 +27,7 @@ export type NoticeRecord = {
   completed: boolean;
 };
 
-export type NoticeItem = {
-  id: number;
-  date: string;
-  time: string;
-  title: string;
-  moreInfo: string;
-  completed: boolean;
-};
+export type NoticeItem = Omit<NoticeRecord, "userId">;
 
 export type NoticeMutationInput = {
   date: string;
