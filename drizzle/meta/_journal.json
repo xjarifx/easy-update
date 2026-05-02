@@ -50,6 +50,13 @@
       "when": 1776574800000,
       "tag": "0006_scope_events_by_user",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1746224400000,
+      "tag": "0007_add_clerk_id",
+      "breakpoints": true
     }
   ]
 }

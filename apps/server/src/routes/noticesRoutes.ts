@@ -7,7 +7,7 @@ import {
   parseNoticeId,
   updateNoticeFromInput,
 } from "../services/noticesService.js";
-import { getAuthenticatedUserId } from "../middleware/authMiddleware.js";
+import { getAuthenticatedUserId } from "../middleware/clerkAuth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError, NotFoundError } from "../utils/errors.js";
 

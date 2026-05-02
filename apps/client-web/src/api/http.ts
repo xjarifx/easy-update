@@ -9,14 +9,8 @@ type ApiResponse<T> = {
   error?: string | ApiError;
 };
 
-let authToken: string | null = null;
-
-export const setAuthToken = (token: string) => {
-  authToken = token;
-};
-
-export const clearAuthToken = () => {
-  authToken = null;
+export const setClerkTokenGetter = (getter: () => Promise<string | null>) => {
+  (window as any).__clerkTokenGetter = getter;
 };
 
 function getErrorMessage(payload: ApiResponse<unknown>, status: number) {
@@ -37,8 +31,12 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const headers = new Headers(init?.headers);
 
-  if (authToken) {
-    headers.set("Authorization", `Bearer ${authToken}`);
+  const tokenGetter = (window as any).__clerkTokenGetter;
+  if (tokenGetter) {
+    const token = await tokenGetter();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
   }
 
   const response = await fetch(input, {

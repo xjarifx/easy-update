@@ -11,12 +11,14 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
+    "@clerk/backend": "^3.4.4",
     "@easy-update/types": "workspace:*",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "express": "^5.1.0",
-    "pg": "^8.16.0"
+    "pg": "^8.16.0",
+    "resend": "^6.12.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

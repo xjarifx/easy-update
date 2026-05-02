@@ -24,7 +24,7 @@ import Calendar from "./Calendar";
 import { SettingsPanel } from "./SettingsPanel";
 import { ConfirmModal } from "./ConfirmModal";
 import { AuthScreen } from "./auth/AuthScreen";
-import { useAuth } from "./auth/AuthContext";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import { apiRequest } from "./api/http";
 import { extractAndCreateEvents } from "./api/events";
 import { fetchProviderModels } from "./api/providers";
@@ -1758,7 +1758,15 @@ function SettingPage() {
 }
 
 function App() {
-  const { user, isAuthenticated, isInitializing, signOut } = useAuth();
+  const { isSignedIn, signOut, getToken } = useAuth();
+  const { user, isLoaded } = useUser();
+
+  // Register Clerk token getter for API requests
+  useEffect(() => {
+    if (getToken) {
+      (window as any).__clerkTokenGetter = getToken;
+    }
+  }, [getToken]);
   const [activePage, setActivePage] = useState<Page>(() =>
     readSavedActivePage(),
   );
@@ -1886,7 +1894,7 @@ function App() {
     };
   }, [loadNotices]);
 
-  if (isInitializing) {
+  if (!isLoaded) {
     return (
       <main className="auth-shell min-h-screen items-center justify-center">
         <div className="auth-card">
@@ -1896,7 +1904,7 @@ function App() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return <AuthScreen />;
   }
 
@@ -1944,10 +1952,10 @@ function App() {
 
           <div className="mt-6 border-t border-slate-200 pt-4">
             <p className="text-xs font-semibold text-slate-600">Signed in as</p>
-            <p className="neo-label mt-1 truncate text-sm">{user?.email}</p>
+            <p className="neo-label mt-1 truncate text-sm">{user?.primaryEmailAddress?.emailAddress}</p>
             <button
               type="button"
-              onClick={signOut}
+              onClick={() => signOut()}
               className="neo-button-secondary mt-3 inline-flex w-full items-center justify-center gap-2 px-3 py-2 text-xs"
             >
               <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
