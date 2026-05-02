@@ -51,8 +51,10 @@ pnpm --filter @easy-update/server dev
 
 ## Environment Setup
 
-- **Root `.env.example`**: Template for environment variables
-- **`apps/server/.env`**: Server environment (DATABASE_URL, PORT, etc.)
+- **Per-project `.env.example` files**: Each app has its own `.env.example`
+  - `apps/server/.env.example`: Server environment (DATABASE_URL, PORT, etc.)
+  - `apps/client-web/.env.example`: Client environment (VITE_* vars if needed)
+- **`apps/server/.env`**: Local server environment (gitignored)
 - Database: Remote PostgreSQL on Aiven Cloud
 - Server runs on `http://localhost:4000`
 - Client runs on `http://localhost:5173` (proxies `/api` to server)
