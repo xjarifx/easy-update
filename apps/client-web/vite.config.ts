@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  optimizeDeps: { noDiscovery: true },
+  optimizeDeps: { include: ['use-sync-external-store/shim/index.js'] },
   build: {
     outDir: "dist",
   },

@@ -1760,13 +1760,6 @@ function SettingPage() {
 function App() {
   const { isSignedIn, signOut, getToken } = useAuth();
   const { user, isLoaded } = useUser();
-
-  // Register Clerk token getter for API requests
-  useEffect(() => {
-    if (getToken) {
-      (window as any).__clerkTokenGetter = getToken;
-    }
-  }, [getToken]);
   const [activePage, setActivePage] = useState<Page>(() =>
     readSavedActivePage(),
   );
@@ -1799,7 +1792,8 @@ function App() {
         }
         setNoticesError("");
 
-        const noticeData = await fetchNotices();
+        const token = isSignedIn ? await getToken().catch(() => null) : null;
+        const noticeData = await fetchNotices(token);
         setNotices(sortNoticesAsc(noticeData ?? []));
       } catch (err) {
         const message =
@@ -1811,34 +1805,37 @@ function App() {
         }
       }
     },
-    [],
+    [isSignedIn, getToken],
   );
 
   const createNotice = useCallback(
     async (notice: NoticeMutationInput) => {
-      await createNoticeRequest(notice);
+      const token = isSignedIn ? await getToken().catch(() => null) : null;
+      await createNoticeRequest(notice, token);
 
       await loadNotices();
     },
-    [loadNotices],
+    [loadNotices, isSignedIn, getToken],
   );
 
   const updateNotice = useCallback(
     async (id: number, notice: NoticeMutationInput) => {
-      await updateNoticeRequest(id, notice);
+      const token = isSignedIn ? await getToken().catch(() => null) : null;
+      await updateNoticeRequest(id, notice, token);
 
       await loadNotices();
     },
-    [loadNotices],
+    [loadNotices, isSignedIn, getToken],
   );
 
   const deleteNotice = useCallback(
     async (id: number) => {
-      await deleteNoticeRequest(id);
+      const token = isSignedIn ? await getToken().catch(() => null) : null;
+      await deleteNoticeRequest(id, token);
 
       await loadNotices();
     },
-    [loadNotices],
+    [loadNotices, isSignedIn, getToken],
   );
 
   useEffect(() => {
@@ -1870,10 +1867,14 @@ function App() {
   }, []);
 
   useEffect(() => {
-    void loadNotices();
-  }, [loadNotices]);
+    if (isSignedIn) {
+      void loadNotices();
+    }
+  }, [loadNotices, isSignedIn]);
 
   useEffect(() => {
+    if (!isSignedIn) return;
+
     const intervalId = window.setInterval(() => {
       void loadNotices({ background: true });
     }, NOTICE_AUTO_REFRESH_INTERVAL_MS);
@@ -1892,7 +1893,7 @@ function App() {
       window.removeEventListener("focus", handleVisibilityOrFocus);
       document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
     };
-  }, [loadNotices]);
+  }, [loadNotices, isSignedIn]);
 
   if (!isLoaded) {
     return (
