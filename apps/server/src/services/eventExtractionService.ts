@@ -307,7 +307,11 @@ export const extractEvents = async (input: {
     input.requestOrigin,
   );
 
-  const parsed = parseJsonObjectFromText(extractionText);
+  try {
+    const parsed = parseJsonObjectFromText(extractionText);
 
-  return validateExtractedEvents(parsed.events);
+    return validateExtractedEvents(parsed.events);
+  } catch {
+    return [];
+  }
 };

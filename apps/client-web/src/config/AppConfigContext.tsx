@@ -6,10 +6,15 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { useAuth } from "@clerk/clerk-react";
+import {
+  fetchUserPreferences,
+  toUserPreferences,
+  updateUserPreferences,
+} from "../api/preferences";
 import {
   type AppConfigType,
   DEFAULT_CONFIG,
-  APP_CONFIG_STORAGE_KEY,
   isValidConfig,
   FONT_STACKS,
 } from "./appConfig";
@@ -24,67 +29,93 @@ const AppConfigContext = createContext<AppConfigContextType | undefined>(
   undefined,
 );
 
-/**
- * Load config from localStorage or use defaults
- */
-function loadConfig(): AppConfigType {
-  try {
-    const stored = window.localStorage.getItem(APP_CONFIG_STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (isValidConfig(parsed)) {
-        return parsed;
-      }
-    }
-  } catch (error) {
-    console.warn("Failed to load app config from storage:", error);
-  }
-  return DEFAULT_CONFIG;
-}
-
-/**
- * Save config to localStorage
- */
-function saveConfig(config: AppConfigType): void {
-  try {
-    window.localStorage.setItem(APP_CONFIG_STORAGE_KEY, JSON.stringify(config));
-  } catch (error) {
-    console.warn("Failed to save app config to storage:", error);
-  }
-}
-
-/**
- * Apply font to document
- */
 function applyFontToDocument(fontStack: string): void {
   const root = document.documentElement;
   root.style.setProperty("--app-font-family", fontStack);
 }
 
-/**
- * Provider component
- */
 export function AppConfigProvider({ children }: { children: ReactNode }) {
-  const [config, setConfig] = useState<AppConfigType>(loadConfig());
+  const { getToken, isLoaded, isSignedIn, userId } = useAuth();
+  const [config, setConfig] = useState<AppConfigType>(DEFAULT_CONFIG);
 
-  // Apply font on config change
+  const persistRemoteConfig = useCallback(
+    async (nextConfig: AppConfigType) => {
+      if (!isSignedIn) {
+        return;
+      }
+
+      const token = await getToken().catch(() => null);
+
+      if (!token) {
+        return;
+      }
+
+      await updateUserPreferences(nextConfig, token).catch((error) => {
+        console.warn("Failed to save app config to server:", error);
+      });
+    },
+    [getToken, isSignedIn],
+  );
+
   useEffect(() => {
     const fontStack = FONT_STACKS[config.font];
     applyFontToDocument(fontStack);
   }, [config.font]);
 
+  useEffect(() => {
+    if (!isLoaded) {
+      return;
+    }
+
+    if (!isSignedIn || !userId) {
+      setConfig(DEFAULT_CONFIG);
+      return;
+    }
+
+    let isMounted = true;
+
+    const hydrateRemoteConfig = async () => {
+      const token = await getToken().catch(() => null);
+
+      if (!token) {
+        return;
+      }
+
+      try {
+        const remotePreferences = await fetchUserPreferences(token);
+        const remoteConfig = toUserPreferences(remotePreferences);
+
+        if (!isValidConfig(remoteConfig)) {
+          return;
+        }
+
+        if (isMounted) {
+          setConfig(remoteConfig);
+        }
+      } catch (error) {
+        console.warn("Failed to load app config from server:", error);
+      }
+    };
+
+    void hydrateRemoteConfig();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [getToken, isLoaded, isSignedIn, userId]);
+
   const updateConfig = useCallback((newConfig: Partial<AppConfigType>) => {
     setConfig((prev) => {
       const updated = { ...prev, ...newConfig };
-      saveConfig(updated);
+      void persistRemoteConfig(updated);
       return updated;
     });
-  }, []);
+  }, [persistRemoteConfig]);
 
   const resetConfig = useCallback(() => {
-    saveConfig(DEFAULT_CONFIG);
     setConfig(DEFAULT_CONFIG);
-  }, []);
+    void persistRemoteConfig(DEFAULT_CONFIG);
+  }, [persistRemoteConfig]);
 
   return (
     <AppConfigContext.Provider value={{ config, updateConfig, resetConfig }}>

@@ -16,6 +16,7 @@
     "start": "turbo run start",
     "start:built": "node apps/server/dist/index.js",
     "lint": "turbo run lint",
+    "test": "turbo run test",
     "format": "prettier --write .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
