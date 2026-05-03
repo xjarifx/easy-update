@@ -6,7 +6,7 @@ A monorepo for managing notices/events with React frontend, Express backend, and
 
 - **Monorepo**: Turborepo v2 with pnpm workspaces
 - **Package Manager**: pnpm@10.33.2
-- **Client**: React + Vite v8 + TypeScript + Tailwind CSS
+- **Client-web**: React + Vite v8 + TypeScript + Tailwind CSS
 - **Server**: Express + TypeScript + Drizzle ORM + PostgreSQL
 - **Auth**: Clerk (token-based, prebuilt components)
 - **Email**: Resend (welcome emails)
