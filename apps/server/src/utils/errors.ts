@@ -34,13 +34,6 @@ export class UnauthorizedError extends AppError {
   }
 }
 
-export class ForbiddenError extends AppError {
-  constructor(message: string = "Forbidden") {
-    super(403, message);
-    Object.setPrototypeOf(this, ForbiddenError.prototype);
-  }
-}
-
 export class ConflictError extends AppError {
   constructor(message: string = "Resource already exists") {
     super(409, message);
@@ -52,12 +45,5 @@ export class BadGatewayError extends AppError {
   constructor(message: string = "Service unavailable") {
     super(502, message);
     Object.setPrototypeOf(this, BadGatewayError.prototype);
-  }
-}
-
-export class InternalServerError extends AppError {
-  constructor(message: string = "Internal server error") {
-    super(500, message);
-    Object.setPrototypeOf(this, InternalServerError.prototype);
   }
 }

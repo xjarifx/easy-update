@@ -1,105 +1,82 @@
-# Easy Update
+# AGENTS.md
 
-React + TypeScript (Vite) frontend with Express API backend, Drizzle ORM, PostgreSQL.
+## Project Overview
+
+Easy Update - a monorepo for managing notices/events with React frontend and Express backend.
+
+## Tech Stack
+
+- **Monorepo**: Turborepo v2 with pnpm workspaces
+- **Package Manager**: pnpm@10.33.2
+- **Client**: React + Vite v8 + TypeScript
+- **Server**: Express + TypeScript + Drizzle ORM + PostgreSQL
+- **Shared**: `@easy-update/types` package
 
 ## Project Structure
-
-Monorepo with npm workspaces:
 
 ```
 easy-update/
 ├── apps/
-│   ├── client/          # Frontend (React, Vite, Tailwind CSS)
-│   │   ├── src/
-│   │   ├── public/
-│   │   ├── index.html
-│   │   ├── vite.config.ts
-│   │   ├── tsconfig.json
-│   │   └── package.json
-│   └── server/          # Backend (Express API, Drizzle ORM)
-│       ├── src/
-│       ├── tsconfig.json
-│       └── package.json
+│   ├── client-web/      # Vite + React frontend (web)
+│   ├── client-android/  # Android client (placeholder)
+│   ├── client-ios/      # iOS client (placeholder)
+│   └── server/          # Express API backend
 ├── packages/
-│   └── types/           # Shared domain types (@easy-update/types)
-├── scripts/             # Database utility scripts
-├── docs/                # Project documentation
-├── drizzle/             # SQL migrations
-├── drizzle.config.ts
-├── package.json         # Root workspace config
-├── tsconfig.json        # Solution-style references
-└── tsconfig.node.json   # Build tooling
+│   └── types/           # Shared TypeScript types
+├── drizzle/             # Database migrations
+├── .github/workflows/   # CI/CD (ci.yml)
+└── turbo.json
 ```
 
-## Key Commands
-
-| Command               | Notes                                           |
-| --------------------- | ----------------------------------------------- |
-| `npm run dev`         | Runs `dev:full`                                 |
-| `npm run dev:full`    | Runs server + client concurrently               |
-| `npm run dev:client`  | Client only (Vite dev server)                   |
-| `npm run dev:server`  | Server only on port 4000                        |
-| `npm run build`       | Builds both client and server                   |
-| `npm run start`       | Builds first, then starts Express               |
-| `npm run start:built` | Starts already-built Express (skips build)      |
-| `npm run lint`        | ESLint                                          |
-| `npm run format`      | Prettier + Tailwind class sorting               |
-
-Workspace-specific commands:
+## Commands
 
 ```bash
-npm run dev --workspace=@easy-update/client
-npm run build --workspace=@easy-update/server
+pnpm install              # Install dependencies
+pnpm run dev             # Start all apps in dev mode
+pnpm run build           # Build all apps
+pnpm run lint            # Lint all apps
+pnpm run test            # Run tests (if configured)
+
+# Database
+pnpm run db:generate    # Generate migration (drizzle-kit)
+pnpm run db:migrate     # Run migrations
+pnpm run db:push        # Push schema changes
+pnpm run db:studio      # Open Drizzle Studio
+pnpm run db:seed        # Seed database
+
+# Individual apps
+pnpm --filter @easy-update/client-web dev
+pnpm --filter @easy-update/server dev
 ```
 
-## Database (Drizzle + PostgreSQL)
+## Environment Setup
 
-Requires `DATABASE_URL` in `.env`.
+- **Per-project `.env.example` files**: Each app has its own `.env.example`
+  - `apps/server/.env.example`: Server environment (DATABASE_URL, PORT, etc.)
+  - `apps/client-web/.env.example`: Client environment (VITE_* vars if needed)
+- **`apps/server/.env`**: Local server environment (gitignored)
+- Database: Remote PostgreSQL on Aiven Cloud
+- Server runs on `http://localhost:4000`
+- Client runs on `http://localhost:5173` (proxies `/api` to server)
 
-```bash
-npm run db:generate   # Create migrations from schema.ts
-npm run db:migrate    # Apply migrations to PostgreSQL
-npm run db:push       # Push schema changes directly
-npm run db:seed       # Seed demo data if notices table empty
-npm run db:studio     # Open Drizzle Studio
-```
+## Deployment
 
-Schema: `apps/server/src/db/schema.ts`
+- **Client**: Vercel (static Vite build from `apps/client-web`)
+- **Server**: Render (Node service from `apps/server`)
 
-## Architecture
+## Key Notes
 
-Enforces one-way data flow:
+- Vite config has `optimizeDeps: { noDiscovery: true }` to fix dep-scan issue
+- `.turbo/` is gitignored (add to gitignore if not present)
+- TypeScript types are shared via `@easy-update/types` workspace package
+- `NoticeRecord` (server) includes `userId`; `NoticeItem` (client) omits it via `Omit<NoticeRecord, "userId">`
+- All `.env` files with secrets should never be committed
+- Node modules may have stale npm artifacts; run `pnpm install` to clean
 
-- Frontend → API → Database (writes)
-- Database → API → Frontend (reads)
+## CI
 
-Code organization:
-
-- `apps/client/src/api/*` - API client modules (frontend never talks to DB)
-- `apps/server/src/routes/*` - Express route handlers
-- `apps/server/src/services/*` - Business logic
-- `apps/server/src/repositories/*` - Database access
-
-## API Endpoints
-
-- `GET /api/health` - Health check
-- `GET/POST /api/notices` - CRUD notices
-- `PUT/DELETE /api/notices/:id` - Update/delete notice
-- `GET/POST /api/events` - Calendar events from notices
-- `POST /api/events/extract-and-create` - Extract events from text
-- `POST /api/providers/models` - Fetch provider model lists
-
-## Environment Variables
-
-```
-DATABASE_URL=          # PostgreSQL connection string
-OPENROUTE_API_KEY=     # External API key (optional)
-PORT=4000              # Server port (default: 4000)
-```
-
-## TypeScript Configs
-
-- `apps/client/tsconfig.json` - Frontend (DOM, esnext modules, noEmit)
-- `apps/server/tsconfig.json` - Backend (NodeNext, outputs to `dist/`)
-- `tsconfig.node.json` - Build tooling
-- `tsconfig.json` - Solution-style root (references all workspaces)
+GitHub Actions workflow (`.github/workflows/ci.yml`):
+- Runs on push/PR to `main`
+- Sets up pnpm + Node.js
+- Caches pnpm store and turbo artifacts
+- Runs `turbo run lint build`

@@ -10,11 +10,7 @@ export const VALID_PROVIDERS: ProviderId[] = [
 export type AuthUser = {
   id: number;
   email: string;
-};
-
-export type AuthResponse = {
-  token: string;
-  user: AuthUser;
+  clerkId: string;
 };
 
 export type NoticeRecord = {
@@ -27,14 +23,7 @@ export type NoticeRecord = {
   completed: boolean;
 };
 
-export type NoticeItem = {
-  id: number;
-  date: string;
-  time: string;
-  title: string;
-  moreInfo: string;
-  completed: boolean;
-};
+export type NoticeItem = Omit<NoticeRecord, "userId">;
 
 export type NoticeMutationInput = {
   date: string;
@@ -42,13 +31,6 @@ export type NoticeMutationInput = {
   title: string;
   moreInfo?: string;
   completed?: boolean;
-};
-
-export type UserRecord = {
-  id: number;
-  email: string;
-  passwordHash: string;
-  createdAt: Date;
 };
 
 export type ExtractedEvent = {

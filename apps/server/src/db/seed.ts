@@ -73,16 +73,16 @@ const seed = async () => {
     let demoUserId = existingDemoUser?.id;
 
     if (!demoUserId) {
-      const [createdDemoUser] = await db
-        .insert(usersTable)
-        .values({
-          email: demoEmail,
-          passwordHash: "seed-user-password-not-for-login",
-        })
-        .returning({ id: usersTable.id });
+        const [createdDemoUser] = await db
+          .insert(usersTable)
+          .values({
+            clerkId: `seed_${demoEmail}`,
+            email: demoEmail,
+          })
+          .returning({ id: usersTable.id });
 
-      demoUserId = createdDemoUser.id;
-    }
+        demoUserId = createdDemoUser.id;
+      }
 
     const inserted = await db
       .insert(noticesTable)
