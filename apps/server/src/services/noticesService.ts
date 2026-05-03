@@ -1,5 +1,4 @@
 import {
-  createManyNotices,
   createNotice,
   deleteNotice,
   findNoticeByExactFields,
@@ -9,7 +8,6 @@ import {
   updateNotice,
 } from "../repositories/noticesRepository.js";
 import type {
-  ExtractedEvent,
   NoticeMutationInput,
   NoticeRecord,
 } from "@easy-update/types";
@@ -24,10 +22,6 @@ type NormalizedNoticeInput = {
   title: string;
   moreInfo: string;
   completed: boolean;
-};
-
-type UserScopedNoticeInput = NormalizedNoticeInput & {
-  userId: number;
 };
 
 type NoticeInputValidationResult =

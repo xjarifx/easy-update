@@ -9,10 +9,6 @@ type ApiResponse<T> = {
   error?: string | ApiError;
 };
 
-export const setClerkTokenGetter = (getter: () => Promise<string | null>) => {
-  (window as any).__clerkTokenGetter = getter;
-};
-
 function getErrorMessage(payload: ApiResponse<unknown>, status: number) {
   if (!payload.error) {
     return `Request failed with status ${status}`;
@@ -27,20 +23,20 @@ function getErrorMessage(payload: ApiResponse<unknown>, status: number) {
 
 export async function apiRequest<T>(
   input: RequestInfo | URL,
-  init?: RequestInit,
+  init?: RequestInit & { token?: string | null },
 ): Promise<T> {
   const headers = new Headers(init?.headers);
 
-  const tokenGetter = (window as any).__clerkTokenGetter;
-  if (tokenGetter) {
-    const token = await tokenGetter();
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
+  const token = init?.token;
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
+  // Remove token from init before passing to fetch
+  const { token: _, ...fetchInit } = (init ?? {}) as RequestInit & { token?: string | null };
+
   const response = await fetch(input, {
-    ...init,
+    ...fetchInit,
     headers,
   });
 

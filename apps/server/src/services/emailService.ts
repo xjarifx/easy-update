@@ -6,7 +6,7 @@ const APP_URL = process.env.CLIENT_URL || "http://localhost:5173";
 const FROM_EMAIL = "Easy Update <onboarding@resend.dev>"; // Update to your verified domain
 
 export const sendWelcomeEmail = async (to: string) => {
-  const { data, error } = await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: FROM_EMAIL,
     to,
     subject: "Welcome to Easy Update!",

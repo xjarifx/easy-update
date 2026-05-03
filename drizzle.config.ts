@@ -1,6 +1,10 @@
 /// <reference types="node" />
-import "dotenv/config";
+import { config } from "dotenv";
 import { defineConfig } from "drizzle-kit";
+import { resolve } from "path";
+
+// Load env from apps/server/.env
+config({ path: resolve(__dirname, "apps/server/.env") });
 
 export default defineConfig({
   out: "./drizzle",
