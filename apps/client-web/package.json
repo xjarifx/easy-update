@@ -1,5 +1,5 @@
 {
-  "name": "@easy-update/client",
+  "name": "@easy-update/client-web",
   "private": true,
   "version": "0.0.0",
   "type": "module",

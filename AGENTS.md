@@ -45,7 +45,7 @@ pnpm run db:studio      # Open Drizzle Studio
 pnpm run db:seed        # Seed database
 
 # Individual apps
-pnpm --filter @easy-update/client dev
+pnpm --filter @easy-update/client-web dev
 pnpm --filter @easy-update/server dev
 ```
 
@@ -61,7 +61,7 @@ pnpm --filter @easy-update/server dev
 
 ## Deployment
 
-- **Client**: Vercel (static Vite build from `apps/client`)
+- **Client**: Vercel (static Vite build from `apps/client-web`)
 - **Server**: Render (Node service from `apps/server`)
 
 ## Key Notes

@@ -53,7 +53,7 @@ pnpm install
 pnpm run dev
 
 # Start individual apps
-pnpm --filter @easy-update/client dev
+pnpm --filter @easy-update/client-web dev
 pnpm --filter @easy-update/server dev
 ```
 
@@ -73,7 +73,7 @@ pnpm --filter @easy-update/server dev
 - `pnpm run db:seed` - Seed database with demo data
 
 ### Apps
-- `pnpm --filter @easy-update/client dev` - Start client dev server
+- `pnpm --filter @easy-update/client-web dev` - Start client dev server
 - `pnpm --filter @easy-update/server dev` - Start server dev server
 
 ## Database (Drizzle ORM)
