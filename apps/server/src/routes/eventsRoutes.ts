@@ -110,7 +110,12 @@ eventsRouter.post(
       );
     }
 
-    if (typeof apiKey !== "string" || !apiKey.trim()) {
+    const apiKeyFromBody =
+      typeof apiKey === "string" && apiKey.trim()
+        ? apiKey.trim()
+        : process.env.MANAGED_AI_API_KEY;
+
+    if (!apiKeyFromBody) {
       throw new ValidationError("apiKey is required");
     }
 
@@ -125,7 +130,7 @@ eventsRouter.post(
     const extractedEvents = await extractEvents({
       provider: provider as ProviderId,
       model: model.trim(),
-      apiKey: apiKey.trim(),
+      apiKey: apiKeyFromBody,
       inputText,
       requestOrigin: req.get("origin") ?? "http://localhost:4000",
     });

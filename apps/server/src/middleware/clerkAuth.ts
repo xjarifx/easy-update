@@ -43,7 +43,6 @@ export const requireAuthentication = async (
    try {
      const payload = await verifyToken(token, {
        secretKey: process.env.CLERK_SECRET_KEY,
-       issuer: process.env.CLERK_ISSUER,
        clockSkewInMs: 30000, // Allow 30 seconds of clock skew
        authorizedParties: [
          'http://localhost:5173',

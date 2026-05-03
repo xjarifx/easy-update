@@ -29,9 +29,9 @@ describe("eventExtractionService", () => {
       // Mock fetch for OpenRouter
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => ({
-          choices: [{ message: { content: '{"events": [{"title": "Test", "date": "2026-05-03", "time": "14:00", "moreInfo": ""}]}' }],
-        }),
+       json: () => ({
+         choices: [{ message: { content: '{"events": [{"title": "Test", "date": "2026-05-03", "time": "14:00", "moreInfo": ""}]}' } }],
+       }),
       });
       vi.stubGlobal("fetch", mockFetch);
 
@@ -52,9 +52,9 @@ describe("eventExtractionService", () => {
     it("should return empty array for no events", async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => ({
-          choices: [{ message: { content: '{"events": []}' }],
-        }),
+       json: () => ({
+         choices: [{ message: { content: '{"events": []}' } }],
+       }),
       });
       vi.stubGlobal("fetch", mockFetch);
 
@@ -74,9 +74,9 @@ describe("eventExtractionService", () => {
     it("should handle invalid JSON response", async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => ({
-          choices: [{ message: { content: "invalid json" }],
-        }),
+       json: () => ({
+         choices: [{ message: { content: "invalid json" } }],
+       }),
       });
       vi.stubGlobal("fetch", mockFetch);
 

@@ -54,6 +54,7 @@ type SavedApiSettings = {
   provider: ProviderId;
   apiKey: EncryptedValue;
   selectedModel: string;
+  useManagedService?: boolean;
 };
 
 const PROVIDER_OPTIONS: Array<{ id: ProviderId; label: string }> = [
@@ -183,17 +184,15 @@ async function saveEncryptedSettings(settings: {
   provider: ProviderId;
   apiKey: string;
   selectedModel: string;
+  useManagedService: boolean;
 }) {
-  if (!settings.apiKey.trim()) {
-    window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
-    return;
-  }
-
-  const encryptedApiKey = await encryptValue(settings.apiKey.trim());
   const payload: SavedApiSettings = {
     provider: settings.provider,
-    apiKey: encryptedApiKey,
+    apiKey: settings.useManagedService
+      ? { iv: "", data: "" }
+      : await encryptValue(settings.apiKey.trim()),
     selectedModel: settings.selectedModel,
+    useManagedService: settings.useManagedService,
   };
 
   window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(payload));
@@ -213,6 +212,7 @@ function InputPage({
   onUpdateRecentEvent,
   onDeleteRecentEvent,
 }: InputPageProps) {
+  const { getToken } = useAuth();
   const config = useAppConfigSettings();
   const [textInput, setTextInput] = useState("");
   const [documents, setDocuments] = useState<File[]>([]);
@@ -452,9 +452,12 @@ function InputPage({
     processAbortControllerRef.current = abortController;
 
     try {
-      const decryptedApiKey = await decryptValue(savedSettings.apiKey);
+      const useManaged = savedSettings.useManagedService ?? false;
+      const decryptedApiKey = useManaged
+        ? undefined
+        : await decryptValue(savedSettings.apiKey);
 
-      if (!decryptedApiKey.trim()) {
+      if (!useManaged && !decryptedApiKey?.trim()) {
         setProcessStatus(
           "Your saved API key is empty. Go to Setting and enter a valid API key.",
         );
@@ -464,9 +467,10 @@ function InputPage({
       const response = await extractAndCreateEvents({
         provider: savedSettings.provider,
         model: savedSettings.selectedModel,
-        apiKey: decryptedApiKey,
+        apiKey: useManaged ? undefined : decryptedApiKey,
         inputText: trimmedText,
         signal: abortController.signal,
+        token: await getToken().catch(() => null),
       });
 
       const createdCount = response.createdCount ?? 0;
@@ -1481,6 +1485,7 @@ function NoticePage({
 }
 
 function SettingPage() {
+  const { getToken } = useAuth();
   const [provider, setProvider] = useState<ProviderId>("openrouter");
   const [apiKey, setApiKey] = useState("");
   const [availableModels, setAvailableModels] = useState<string[]>([]);
@@ -1491,6 +1496,7 @@ function SettingPage() {
   const [saveMessage, setSaveMessage] = useState(
     "Your API key is saved locally and encrypted.",
   );
+  const [useManagedService, setUseManagedService] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -1522,6 +1528,7 @@ function SettingPage() {
         setProvider(restoredProvider);
         setApiKey(decryptedApiKey);
         setSelectedModel(savedSettings.selectedModel);
+        setUseManagedService(savedSettings.useManagedService ?? false);
         setSaveMessage("Loaded saved API key from local encrypted storage.");
       } catch {
         if (!isMounted) {
@@ -1532,6 +1539,7 @@ function SettingPage() {
         setApiKey("");
         setSelectedModel("");
         setProvider("openrouter");
+        setUseManagedService(true);
         setSaveMessage("Saved API key could not be restored.");
       } finally {
         if (isMounted) {
@@ -1548,10 +1556,10 @@ function SettingPage() {
   }, []);
 
   const loadModelsForProvider = useCallback(async () => {
-    const key = apiKey.trim();
+    const key = useManagedService ? undefined : apiKey.trim();
     setError("");
 
-    if (!key) {
+    if (!useManagedService && !key) {
       setError("Please enter your API key first.");
       return;
     }
@@ -1559,7 +1567,11 @@ function SettingPage() {
     try {
       setIsLoadingModels(true);
 
-      const models = await fetchProviderModels(provider, key);
+      const models = await fetchProviderModels(
+        provider,
+        key,
+        await getToken().catch(() => null),
+      );
 
       const normalizedModels = models
         .filter(Boolean)
@@ -1574,7 +1586,7 @@ function SettingPage() {
       });
 
       if (normalizedModels.length === 0) {
-        setError("No models returned for this API key.");
+        setError("No models returned for this provider.");
       }
     } catch (err) {
       const message =
@@ -1585,7 +1597,7 @@ function SettingPage() {
     } finally {
       setIsLoadingModels(false);
     }
-  }, [apiKey, provider]);
+  }, [apiKey, getToken, provider, useManagedService]);
 
   useEffect(() => {
     if (isHydrating) {
@@ -1600,6 +1612,15 @@ function SettingPage() {
   useEffect(() => {
     if (isHydrating) {
       return;
+    }
+
+    if (useManagedService) {
+      const timeoutId = window.setTimeout(() => {
+        void loadModelsForProvider();
+      }, 500);
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
     }
 
     const key = apiKey.trim();
@@ -1619,10 +1640,26 @@ function SettingPage() {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [apiKey, isHydrating, loadModelsForProvider]);
+  }, [apiKey, isHydrating, loadModelsForProvider, useManagedService]);
 
   useEffect(() => {
     if (isHydrating) {
+      return;
+    }
+
+    if (useManagedService) {
+      saveEncryptedSettings({
+        provider,
+        apiKey: "",
+        selectedModel,
+        useManagedService: true,
+      })
+        .then(() => {
+          setSaveMessage("Using managed service.");
+        })
+        .catch(() => {
+          setSaveMessage("Could not save settings.");
+        });
       return;
     }
 
@@ -1637,6 +1674,7 @@ function SettingPage() {
         provider,
         apiKey,
         selectedModel,
+        useManagedService: false,
       })
         .then(() => {
           setSaveMessage(
@@ -1653,7 +1691,7 @@ function SettingPage() {
     return () => {
       window.clearTimeout(persistTimeoutId);
     };
-  }, [apiKey, isHydrating, provider, selectedModel]);
+  }, [apiKey, isHydrating, provider, selectedModel, useManagedService]);
 
   return (
     <div className="mx-auto flex h-full flex-col gap-6 overflow-auto">
@@ -1681,15 +1719,20 @@ function SettingPage() {
               API Setup
             </h3>
             <p className="mt-1 text-sm font-semibold">
-              Step 1: Choose a provider. Step 2: Paste your API key. Step 3:
-              Choose a model.
-            </p>
-            <p className="mt-1 text-xs font-semibold">
-              Models load automatically after a valid provider and API key are
-              entered.
+              Choose a provider and model to use when extracting events from text.
             </p>
 
             <div className="mt-4 grid gap-4">
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  checked={useManagedService}
+                  onChange={(e) => setUseManagedService(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                Use managed service (no API key needed)
+              </label>
+
               <label className="neo-label grid gap-1 text-sm">
                 Provider
                 <select
@@ -1705,16 +1748,18 @@ function SettingPage() {
                 </select>
               </label>
 
-              <label className="neo-label grid gap-1 text-sm">
-                API Key
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter your API key"
-                  className="px-3 py-2"
-                />
-              </label>
+              {!useManagedService && (
+                <label className="neo-label grid gap-1 text-sm">
+                  API Key
+                  <input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Enter your API key"
+                    className="px-3 py-2"
+                  />
+                </label>
+              )}
 
               <label className="neo-label grid gap-1 text-sm">
                 Model

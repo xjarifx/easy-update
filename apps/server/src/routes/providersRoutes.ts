@@ -23,7 +23,12 @@ providersRouter.post(
       );
     }
 
-    if (typeof apiKey !== "string" || !apiKey.trim()) {
+    const apiKeyFromBody =
+      typeof apiKey === "string" && apiKey.trim()
+        ? apiKey.trim()
+        : process.env.MANAGED_AI_API_KEY;
+
+    if (!apiKeyFromBody) {
       throw new ValidationError("apiKey is required");
     }
 
@@ -31,7 +36,7 @@ providersRouter.post(
       const requestOrigin = req.get("origin") ?? "http://localhost:4000";
       const data = await fetchModelsForProvider(
         provider as ProviderId,
-        apiKey.trim(),
+        apiKeyFromBody,
         requestOrigin,
       );
 

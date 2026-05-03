@@ -4,6 +4,7 @@ import type { NoticeItem, NoticeMutationInput } from "@easy-update/types";
 export const fetchNotices = (token: string | null | undefined) => {
   return apiRequest<NoticeItem[]>("/api/notices", {
     cache: "no-store",
+    requiresAuth: true,
     token,
   });
 };
@@ -15,6 +16,7 @@ export const createNotice = (notice: NoticeMutationInput, token: string | null |
       "Content-Type": "application/json",
     },
     body: JSON.stringify(notice),
+    requiresAuth: true,
     token,
   });
 };
@@ -26,6 +28,7 @@ export const updateNotice = (id: number, notice: NoticeMutationInput, token: str
       "Content-Type": "application/json",
     },
     body: JSON.stringify(notice),
+    requiresAuth: true,
     token,
   });
 };
@@ -33,6 +36,7 @@ export const updateNotice = (id: number, notice: NoticeMutationInput, token: str
 export const deleteNotice = (id: number, token: string | null | undefined) => {
   return apiRequest<NoticeItem>(`/api/notices/${id}`, {
     method: "DELETE",
+    requiresAuth: true,
     token,
   });
 };

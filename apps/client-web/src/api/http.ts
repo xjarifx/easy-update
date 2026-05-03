@@ -23,17 +23,24 @@ function getErrorMessage(payload: ApiResponse<unknown>, status: number) {
 
 export async function apiRequest<T>(
   input: RequestInfo | URL,
-  init?: RequestInit & { token?: string | null },
+  init?: RequestInit & { requiresAuth?: boolean; token?: string | null },
 ): Promise<T> {
   const headers = new Headers(init?.headers);
 
   const token = init?.token;
+  if (init?.requiresAuth && !token) {
+    throw new Error("Authentication required");
+  }
+
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  // Remove token from init before passing to fetch
-  const { token: _, ...fetchInit } = (init ?? {}) as RequestInit & { token?: string | null };
+  const { requiresAuth: _requiresAuth, token: _token, ...fetchInit } =
+    (init ?? {}) as RequestInit & {
+      requiresAuth?: boolean;
+      token?: string | null;
+    };
 
   const response = await fetch(input, {
     ...fetchInit,
