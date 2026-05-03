@@ -58,15 +58,19 @@ Date normalization rules:
 2. If month/day are present but year is missing, infer year:
 	- Use the current year by default.
 	- If that would clearly place a planning note in the past, use next year.
-3. Handle relative date hints:
+3. Resolve weekday-only dates from the current local reference time:
+	- If the user says a weekday without an explicit date, choose the immediate next occurrence of that weekday on or after today.
+	- If that weekday is today, use today only when the text implies today; otherwise choose 7 days later when the phrasing implies a future schedule.
+	- Example: if today is Sunday 2026-05-03, "Monday 2 pm" means 2026-05-04 14:00, not 2026-05-03.
+4. Handle relative date hints:
 	- "early <month>" -> prefer days 1-10
 	- "mid <month>" -> prefer days 11-20
 	- "late/toward the end of <month>" -> prefer days 21-31
-4. If a weekday and date are both present, use the explicit date.
-5. If a date is written in parentheses after a weekday, treat it as the actual event date.
-6. If multiple dated items appear in one message, create one event per dated item.
-7. If a phrase says "next class", "next Monday", "tomorrow", or similar relative time, resolve it from the surrounding message and the current date context.
-8. If multiple interpretations are possible, choose the most explicit nearby clue.
+5. If a weekday and date are both present, use the explicit date.
+6. If a date is written in parentheses after a weekday, treat it as the actual event date.
+7. If multiple dated items appear in one message, create one event per dated item.
+8. If a phrase says "next class", "next Monday", "tomorrow", or similar relative time, resolve it from the surrounding message and the current date context.
+9. If multiple interpretations are possible, choose the most explicit nearby clue.
 
 Time normalization rules:
 1. Time must be 24-hour HH:MM.
