@@ -1,0 +1,653 @@
+openapi: 3.0.3
+info:
+  title: Easy Update API
+  description: API for managing notices/events with AI-powered extraction
+  version: 1.0.0
+  contact:
+    name: Easy Update Team
+    url: https://easy-update.ai
+
+servers:
+  - url: http://localhost:4000
+    description: Local development server
+  - url: https://your-production-domain.com
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      description: Returns the server health status
+      operationId: healthCheck
+      tags:
+        - System
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/notices:
+    get:
+      summary: List all notices
+      description: Returns all notices for the authenticated user
+      operationId: listNotices
+      tags:
+        - Notices
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of notices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NoticeItem'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      summary: Create a notice
+      description: Creates a new notice for the authenticated user
+      operationId: createNotice
+      tags:
+        - Notices
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeMutationInput'
+      responses:
+        '201':
+          description: Notice created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NoticeItem'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/notices/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Notice ID
+        schema:
+          type: integer
+          minimum: 1
+
+    get:
+      summary: Get a notice by ID
+      description: Returns a single notice by ID for the authenticated user
+      operationId: getNoticeById
+      tags:
+        - Notices
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notice found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NoticeItem'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      summary: Update a notice
+      description: Updates an existing notice for the authenticated user
+      operationId: updateNotice
+      tags:
+        - Notices
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeMutationInput'
+      responses:
+        '200':
+          description: Notice updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NoticeItem'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      summary: Delete a notice
+      description: Deletes a notice by ID for the authenticated user
+      operationId: deleteNotice
+      tags:
+        - Notices
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Notice deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/events:
+    get:
+      summary: Get notices as calendar events
+      description: Returns all notices formatted as calendar events for the authenticated user
+      operationId: getCalendarEvents
+      tags:
+        - Events
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of calendar events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CalendarEventItem'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      summary: Create notice from calendar event
+      description: Creates a new notice from a calendar event object
+      operationId: createEvent
+      tags:
+        - Events
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarEventInput'
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CalendarEventItem'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/events/extract-and-create:
+    post:
+      summary: Extract and create events using AI
+      description: Uses AI to extract events from text and creates/updates notices
+      operationId: extractAndCreateEvents
+      tags:
+        - Events
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventExtractionInput'
+      responses:
+        '200':
+          description: Events processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventExtractionResult'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
+
+  /api/providers/models:
+    post:
+      summary: Get AI provider models
+      description: Fetches available models for a specific AI provider
+      operationId: getProviderModels
+      tags:
+        - Providers
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderModelsInput'
+      responses:
+        '200':
+          description: List of available models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
+
+  /api/preferences:
+    get:
+      summary: Get user preferences
+      description: Returns the authenticated user's preferences
+      operationId: getUserPreferences
+      tags:
+        - Preferences
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserPreferences'
+
+    put:
+      summary: Update user preferences
+      description: Updates the authenticated user's preferences
+      operationId: updateUserPreferences
+      tags:
+        - Preferences
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferencesMutationInput'
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserPreferences'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Clerk JWT token
+
+  schemas:
+    NoticeItem:
+      type: object
+      required:
+        - id
+        - date
+        - time
+        - title
+        - moreInfo
+        - completed
+      properties:
+        id:
+          type: integer
+          description: Notice ID
+          example: 1
+        date:
+          type: string
+          description: Notice date in YYYY-MM-DD format
+          example: "2026-04-16"
+        time:
+          type: string
+          description: Notice time in HH:MM format
+          example: "09:00"
+        title:
+          type: string
+          description: Notice title
+          example: "Team standup"
+        moreInfo:
+          type: string
+          description: Additional information
+          example: "Share blockers and confirm priorities"
+          default: ""
+        completed:
+          type: boolean
+          description: Whether the notice is completed
+          default: false
+
+    NoticeMutationInput:
+      type: object
+      required:
+        - date
+        - time
+        - title
+      properties:
+        date:
+          type: string
+          description: Notice date in YYYY-MM-DD format
+          example: "2026-04-16"
+        time:
+          type: string
+          description: Notice time in HH:MM format
+          example: "09:00"
+        title:
+          type: string
+          description: Notice title
+          example: "Team standup"
+        moreInfo:
+          type: string
+          description: Additional information
+          default: ""
+        completed:
+          type: boolean
+          description: Whether the notice is completed
+          default: false
+
+    CalendarEventItem:
+      type: object
+      required:
+        - id
+        - title
+        - start
+        - moreInfo
+      properties:
+        id:
+          type: string
+          description: Event ID (string representation of notice ID)
+          example: "1"
+        title:
+          type: string
+          description: Event title
+          example: "Team standup"
+        start:
+          type: string
+          description: Event start datetime in ISO 8601 format
+          example: "2026-04-16T09:00:00"
+        moreInfo:
+          type: string
+          description: Additional information
+          example: "Share blockers and confirm priorities"
+
+    CalendarEventInput:
+      type: object
+      required:
+        - title
+        - start
+      properties:
+        title:
+          type: string
+          description: Event title
+          example: "Team standup"
+        start:
+          type: string
+          description: Event start datetime (ISO 8601 or parseable date string)
+          example: "2026-04-16T09:00:00"
+        moreInfo:
+          type: string
+          description: Additional information
+          default: ""
+
+    EventExtractionInput:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: Text to extract events from
+          example: "Meeting tomorrow at 3pm to discuss the project"
+        dateFormat:
+          type: string
+          description: Preferred date format for extraction
+          enum: ["DD-MMM-YYYY", "MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "MMM DD, YYYY", "DD MMM"]
+        timeFormat:
+          type: string
+          description: Preferred time format for extraction
+          enum: ["hh:mm AM/PM", "HH:mm"]
+
+    EventExtractionResult:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            createdCount:
+              type: integer
+              description: Number of events created
+              example: 2
+            updatedCount:
+              type: integer
+              description: Number of events updated
+              example: 1
+            events:
+              type: array
+              description: List of processed events
+              items:
+                $ref: '#/components/schemas/NoticeItem'
+            failedCount:
+              type: integer
+              description: Number of events that failed to process
+              example: 0
+            failed:
+              type: array
+              description: List of failed events with errors
+              items:
+                type: object
+                properties:
+                  event:
+                    $ref: '#/components/schemas/NoticeItem'
+                  error:
+                    type: string
+                    example: "Duplicate event"
+
+    ProviderModelsInput:
+      type: object
+      required:
+        - provider
+      properties:
+        provider:
+          type: string
+          description: AI provider ID
+          enum: ["openrouter", "openai", "anthropic", "google"]
+          example: "openrouter"
+
+    UserPreferences:
+      type: object
+      required:
+        - dateFormat
+        - timeFormat
+        - font
+        - firstDayOfWeek
+      properties:
+        dateFormat:
+          type: string
+          description: Preferred date format
+          enum: ["DD-MMM-YYYY", "MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "MMM DD, YYYY", "DD MMM"]
+          example: "DD-MMM-YYYY"
+        timeFormat:
+          type: string
+          description: Preferred time format
+          enum: ["hh:mm AM/PM", "HH:mm"]
+          example: "hh:mm AM/PM"
+        font:
+          type: string
+          description: Preferred font
+          enum: ["Inter", "SF Pro", "System", "Georgia", "Helvetica"]
+          example: "Inter"
+        firstDayOfWeek:
+          type: integer
+          description: First day of week (0 = Sunday, 6 = Saturday)
+          minimum: 0
+          maximum: 6
+          example: 0
+
+    UserPreferencesMutationInput:
+      type: object
+      properties:
+        dateFormat:
+          type: string
+          description: Preferred date format
+          enum: ["DD-MMM-YYYY", "MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "MMM DD, YYYY", "DD MMM"]
+        timeFormat:
+          type: string
+          description: Preferred time format
+          enum: ["hh:mm AM/PM", "HH:mm"]
+        font:
+          type: string
+          description: Preferred font
+          enum: ["Inter", "SF Pro", "System", "Georgia", "Helvetica"]
+        firstDayOfWeek:
+          type: integer
+          description: First day of week (0 = Sunday, 6 = Saturday)
+          minimum: 0
+          maximum: 6
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "title is required"
+                  statusCode:
+                    type: integer
+                    example: 400
+                  timestamp:
+                    type: string
+                    format: date-time
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Notice not found"
+                  statusCode:
+                    type: integer
+                    example: 404
+                  timestamp:
+                    type: string
+                    format: date-time
+
+    UnauthorizedError:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+                  statusCode:
+                    type: integer
+                    example: 401
+                  timestamp:
+                    type: string
+                    format: date-time
+
+    BadGatewayError:
+      description: Bad gateway or upstream service error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Failed to fetch models"
+                  statusCode:
+                    type: integer
+                    example: 502
+                  timestamp:
+                    type: string
+                    format: date-time

@@ -87,9 +87,9 @@ export const requireAuthentication = async (
         .values(newUser)
         .returning();
 
-      // Send welcome email
+      // Send welcome email (non-blocking)
       if (user.email) {
-        await sendWelcomeEmail(user.email).catch((err) =>
+        sendWelcomeEmail(user.email).catch((err) =>
           console.error("Failed to send welcome email:", err),
         );
       }

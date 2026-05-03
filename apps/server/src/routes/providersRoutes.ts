@@ -1,42 +1,32 @@
 import { Router } from "express";
-import { VALID_PROVIDERS, type ProviderId } from "@easy-update/types";
 import { fetchModelsForProvider } from "../services/providerModelsService.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError, BadGatewayError } from "../utils/errors.js";
+import { providerModelsSchema } from "../utils/validation.js";
 
 export const providersRouter = Router();
 
 providersRouter.post(
   "/models",
   asyncHandler(async (req, res) => {
-    const { provider, apiKey } = (req.body ?? {}) as {
-      provider?: unknown;
-      apiKey?: unknown;
-    };
+    const parseResult = providerModelsSchema.safeParse(req.body ?? {});
 
-    if (
-      typeof provider !== "string" ||
-      !VALID_PROVIDERS.includes(provider as ProviderId)
-    ) {
-      throw new ValidationError(
-        "provider must be one of openrouter, openai, anthropic, google",
-      );
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.errors[0].message);
     }
 
-    const apiKeyFromBody =
-      typeof apiKey === "string" && apiKey.trim()
-        ? apiKey.trim()
-        : process.env.MANAGED_AI_API_KEY;
+    const { provider } = parseResult.data;
+    const apiKey = process.env.MANAGED_AI_API_KEY;
 
-    if (!apiKeyFromBody) {
-      throw new ValidationError("apiKey is required");
+    if (!apiKey) {
+      throw new ValidationError("AI provider API key is not configured on server");
     }
 
     try {
       const requestOrigin = req.get("origin") ?? "http://localhost:4000";
       const data = await fetchModelsForProvider(
-        provider as ProviderId,
-        apiKeyFromBody,
+        provider,
+        apiKey,
         requestOrigin,
       );
 

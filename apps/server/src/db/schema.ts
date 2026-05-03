@@ -20,7 +20,7 @@ export const usersTable = pgTable("users", {
 });
 
 export const noticesTable = pgTable(
-  "events",
+  "notices",
   {
     id: serial("id").primaryKey(),
     userId: integer("user_id")
@@ -33,7 +33,7 @@ export const noticesTable = pgTable(
     completed: boolean("completed").notNull().default(false),
   },
   (table) => ({
-    userIdIdx: index("events_user_id_idx").on(table.userId),
+    userIdIdx: index("notices_user_id_idx").on(table.userId),
   }),
 );
 

@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  VALID_PROVIDERS,
   type CalendarEventItem,
   type NoticeMutationInput,
   type NoticeRecord,
@@ -15,6 +14,7 @@ import { extractEvents } from "../services/eventExtractionService.js";
 import { getAuthenticatedUserId } from "../middleware/clerkAuth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError } from "../utils/errors.js";
+import { calendarEventSchema, eventExtractionSchema } from "../utils/validation.js";
 
 export const eventsRouter = Router();
 
@@ -44,20 +44,13 @@ eventsRouter.get(
 eventsRouter.post(
   "/",
   asyncHandler(async (req, res) => {
-    const { title, start, moreInfo } = (req.body ?? {}) as {
-      title?: unknown;
-      start?: unknown;
-      moreInfo?: unknown;
-    };
+    const parseResult = calendarEventSchema.safeParse(req.body ?? {});
 
-    if (typeof title !== "string" || !title.trim()) {
-      throw new ValidationError("title is required");
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.errors[0].message);
     }
 
-    if (typeof start !== "string" || !start.trim()) {
-      throw new ValidationError("start is required");
-    }
-
+    const { title, start, moreInfo } = parseResult.data;
     const dateValue = new Date(start);
 
     if (Number.isNaN(dateValue.getTime())) {
@@ -69,8 +62,8 @@ eventsRouter.post(
       time: `${String(dateValue.getHours()).padStart(2, "0")}:${String(
         dateValue.getMinutes(),
       ).padStart(2, "0")}`,
-      title: title.trim(),
-      moreInfo: typeof moreInfo === "string" ? moreInfo.trim() : "",
+      title,
+      moreInfo,
     };
 
     const userId = getAuthenticatedUserId(req);
@@ -94,45 +87,30 @@ eventsRouter.post(
 eventsRouter.post(
   "/extract-and-create",
   asyncHandler(async (req, res) => {
-    const { provider, apiKey, model, inputText } = (req.body ?? {}) as {
-      provider?: unknown;
-      apiKey?: unknown;
-      model?: unknown;
-      inputText?: unknown;
-    };
+    const parseResult = eventExtractionSchema.safeParse(req.body ?? {});
 
-    if (
-      typeof provider !== "string" ||
-      !VALID_PROVIDERS.includes(provider as ProviderId)
-    ) {
-      throw new ValidationError(
-        "provider must be one of openrouter, openai, anthropic, google",
-      );
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.errors[0].message);
     }
 
-    const apiKeyFromBody =
-      typeof apiKey === "string" && apiKey.trim()
-        ? apiKey.trim()
-        : process.env.MANAGED_AI_API_KEY;
+    const { text, dateFormat, timeFormat } = parseResult.data;
 
-    if (!apiKeyFromBody) {
-      throw new ValidationError("apiKey is required");
-    }
+    const provider = process.env.MANAGED_AI_PROVIDER as ProviderId;
+    const apiKey = process.env.MANAGED_AI_API_KEY;
+    const model = process.env.MANAGED_AI_MODEL;
 
-    if (typeof model !== "string" || !model.trim()) {
-      throw new ValidationError("model is required");
-    }
-
-    if (typeof inputText !== "string" || !inputText.trim()) {
-      throw new ValidationError("inputText is required");
+    if (!provider || !apiKey || !model) {
+      throw new ValidationError("AI provider configuration is missing on server");
     }
 
     const extractedEvents = await extractEvents({
-      provider: provider as ProviderId,
-      model: model.trim(),
-      apiKey: apiKeyFromBody,
-      inputText,
+      provider,
+      model,
+      apiKey,
+      inputText: text,
       requestOrigin: req.get("origin") ?? "http://localhost:4000",
+      dateFormat,
+      timeFormat,
     });
 
     if (extractedEvents.length === 0) {

@@ -6,6 +6,7 @@ import {
 import { getAuthenticatedUserId } from "../middleware/clerkAuth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError } from "../utils/errors.js";
+import { userPreferencesMutationSchema } from "../utils/validation.js";
 
 export const userPreferencesRouter = Router();
 
@@ -23,13 +24,16 @@ userPreferencesRouter.put(
   "/",
   asyncHandler(async (req, res) => {
     const userId = getAuthenticatedUserId(req);
-    const result = await updateUserPreferencesFromInput(userId, req.body ?? {});
+    const parseResult = userPreferencesMutationSchema.safeParse(req.body ?? {});
+
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.errors[0].message);
+    }
+
+    const result = await updateUserPreferencesFromInput(userId, parseResult.data);
 
     if ("error" in result) {
-      const status = result.status ?? 400;
-      const error = new ValidationError(result.error);
-      error.statusCode = status;
-      throw error;
+      throw new ValidationError(result.error);
     }
 
     res.json({ data: result.value });

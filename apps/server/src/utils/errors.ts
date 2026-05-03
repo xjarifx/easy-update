@@ -34,13 +34,6 @@ export class UnauthorizedError extends AppError {
   }
 }
 
-export class ConflictError extends AppError {
-  constructor(message: string = "Resource already exists") {
-    super(409, message);
-    Object.setPrototypeOf(this, ConflictError.prototype);
-  }
-}
-
 export class BadGatewayError extends AppError {
   constructor(message: string = "Service unavailable") {
     super(502, message);

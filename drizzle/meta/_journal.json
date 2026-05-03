@@ -71,6 +71,13 @@
       "when": 1777812600000,
       "tag": "0009_add_user_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1746224400001,
+      "tag": "0010_rename_events_to_notices",
+      "breakpoints": true
     }
   ]
 }

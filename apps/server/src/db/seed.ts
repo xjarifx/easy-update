@@ -1,14 +1,7 @@
 import "dotenv/config";
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
 import { noticesTable, usersTable } from "./schema.js";
-import { Pool } from "pg";
-
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required for seeding");
-}
+import { db } from "./index.js";
 
 const demoNotices = [
   {
@@ -48,20 +41,7 @@ const demoNotices = [
   },
 ];
 
-const normalizedDatabaseUrl = (() => {
-  const url = new URL(databaseUrl);
-  url.searchParams.delete("sslmode");
-
-  return url.toString();
-})();
-
 const seed = async () => {
-  const pool = new Pool({
-    connectionString: normalizedDatabaseUrl,
-    ssl: { rejectUnauthorized: false },
-  });
-  const db = drizzle(pool);
-
   try {
     const demoEmail = "demo@easy-update.local";
     const [existingDemoUser] = await db
@@ -95,8 +75,9 @@ const seed = async () => {
       .returning();
 
     console.log(`Seed complete: inserted ${inserted.length} demo notices.`);
-  } finally {
-    await pool.end();
+  } catch (error) {
+    console.error("Seed failed:", error);
+    process.exitCode = 1;
   }
 };
 

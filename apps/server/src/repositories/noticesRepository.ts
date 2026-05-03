@@ -1,27 +1,14 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { noticesTable } from "../db/schema.js";
 import type { NoticeRecord } from "@easy-update/types";
 
 export const listNotices = async (userId: number) => {
-  const noticeOrderTimestamp = sql`
-    COALESCE(
-      CASE
-        WHEN ${noticesTable.date} ~ '^\\d{4}-\\d{1,2}-\\d{1,2}$' THEN to_date(${noticesTable.date}, 'YYYY-MM-DD')::timestamp
-        WHEN ${noticesTable.date} ~* '^\\d{1,2}-[A-Za-z]{3}-\\d{4}$' THEN to_date(${noticesTable.date}, 'DD-Mon-YYYY')::timestamp
-        WHEN ${noticesTable.date} ~ '^\\d{1,2}/\\d{1,2}/\\d{4}$' THEN to_date(${noticesTable.date}, 'DD/MM/YYYY')::timestamp
-        WHEN ${noticesTable.date} ~ '^\\d{4}/\\d{1,2}/\\d{1,2}$' THEN to_date(${noticesTable.date}, 'YYYY/MM/DD')::timestamp
-        ELSE NULL
-      END,
-      to_timestamp('9999-12-31 00:00', 'YYYY-MM-DD HH24:MI')
-    )
-  `;
-
   return (await db
     .select()
     .from(noticesTable)
     .where(eq(noticesTable.userId, userId))
-    .orderBy(noticeOrderTimestamp, asc(noticesTable.id))) as NoticeRecord[];
+    .orderBy(asc(noticesTable.date), asc(noticesTable.time), asc(noticesTable.id))) as NoticeRecord[];
 };
 
 export const findNoticeById = async (id: number, userId: number) => {
@@ -87,25 +74,6 @@ export const createNotice = async (input: {
   const [notice] = await db.insert(noticesTable).values(input).returning();
 
   return notice as NoticeRecord;
-};
-
-export const createManyNotices = async (
-  values: Array<{
-    userId: number;
-    date: string;
-    time: string;
-    title: string;
-    moreInfo: string;
-    completed: boolean;
-  }>,
-) => {
-  if (values.length === 0) {
-    return [] as NoticeRecord[];
-  }
-
-  const inserted = await db.insert(noticesTable).values(values).returning();
-
-  return inserted as NoticeRecord[];
 };
 
 export const updateNotice = async (

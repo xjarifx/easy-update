@@ -10,6 +10,7 @@ import {
 import { getAuthenticatedUserId } from "../middleware/clerkAuth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError, NotFoundError } from "../utils/errors.js";
+import { noticeMutationSchema } from "../utils/validation.js";
 
 export const noticesRouter = Router();
 
@@ -46,13 +47,16 @@ noticesRouter.post(
   "/",
   asyncHandler(async (req, res) => {
     const userId = getAuthenticatedUserId(req);
-    const result = await createNoticeFromInput(userId, req.body ?? {});
+    const parseResult = noticeMutationSchema.safeParse(req.body ?? {});
+
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.errors[0].message);
+    }
+
+    const result = await createNoticeFromInput(userId, parseResult.data);
 
     if ("error" in result) {
-      const status = result.status ?? 400;
-      const error = new ValidationError(result.error);
-      error.statusCode = status;
-      throw error;
+      throw new ValidationError(result.error);
     }
 
     res.status(201).json({ data: result.value });
@@ -69,13 +73,16 @@ noticesRouter.put(
     }
 
     const userId = getAuthenticatedUserId(req);
-    const result = await updateNoticeFromInput(id, userId, req.body ?? {});
+    const parseResult = noticeMutationSchema.safeParse(req.body ?? {});
+
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.errors[0].message);
+    }
+
+    const result = await updateNoticeFromInput(id, userId, parseResult.data);
 
     if ("error" in result) {
-      const status = result.status ?? 400;
-      const error = new ValidationError(result.error);
-      error.statusCode = status;
-      throw error;
+      throw new ValidationError(result.error);
     }
 
     res.json({ data: result.value });
@@ -95,10 +102,7 @@ noticesRouter.delete(
     const result = await deleteNoticeById(id, userId);
 
     if ("error" in result) {
-      const status = result.status ?? 400;
-      const error = new ValidationError(result.error);
-      error.statusCode = status;
-      throw error;
+      throw new ValidationError(result.error);
     }
 
     res.status(204).send();
