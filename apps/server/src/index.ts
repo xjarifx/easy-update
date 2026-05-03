@@ -4,6 +4,7 @@ import express from "express";
 import { eventsRouter } from "./routes/eventsRoutes.js";
 import { noticesRouter } from "./routes/noticesRoutes.js";
 import { providersRouter } from "./routes/providersRoutes.js";
+import { userPreferencesRouter } from "./routes/userPreferencesRoutes.js";
 import { requireAuthentication } from "./middleware/clerkAuth.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
@@ -26,6 +27,7 @@ app.use("/api", requireAuthentication);
 app.use("/api/notices", noticesRouter);
 app.use("/api/events", eventsRouter);
 app.use("/api/providers", providersRouter);
+app.use("/api/preferences", userPreferencesRouter);
 
 // 404 handler (must be after all routes)
 app.use(notFoundHandler);
