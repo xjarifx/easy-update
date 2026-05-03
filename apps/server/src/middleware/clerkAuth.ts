@@ -11,6 +11,21 @@ type AuthenticatedRequest = Request & {
   authUser?: AuthUser;
 };
 
+const getAuthorizedParties = () => {
+  const rawValue = process.env.CLERK_AUTHORIZED_PARTIES;
+
+  if (!rawValue?.trim()) {
+    return undefined;
+  }
+
+  const authorizedParties = rawValue
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return authorizedParties.length > 0 ? authorizedParties : undefined;
+};
+
 export const getAuthenticatedUserId = (req: Request) => {
   const authReq = req as AuthenticatedRequest;
 
@@ -40,15 +55,12 @@ export const requireAuthentication = async (
     return;
   }
 
-   try {
-     const payload = await verifyToken(token, {
-       secretKey: process.env.CLERK_SECRET_KEY,
-       clockSkewInMs: 30000, // Allow 30 seconds of clock skew
-       authorizedParties: [
-         'http://localhost:5173',
-         'https://sunny-toad-29.clerk.accounts.dev',
-       ],
-     });
+  try {
+    const payload = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY,
+      clockSkewInMs: 30000,
+      authorizedParties: getAuthorizedParties(),
+    });
 
     const clerkId = payload.sub as string;
 
@@ -90,11 +102,11 @@ export const requireAuthentication = async (
     };
 
     next();
-   } catch (error) {
-     next(
-       error instanceof UnauthorizedError
-         ? error
-         : new UnauthorizedError("Invalid authorization token"),
-     );
-   }
+  } catch (error) {
+    next(
+      error instanceof UnauthorizedError
+        ? error
+        : new UnauthorizedError("Invalid authorization token"),
+    );
+  }
 };
