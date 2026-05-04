@@ -13,7 +13,7 @@
     "dev:server": "pnpm --filter @easy-update/server dev",
     "dev:full": "concurrently \"pnpm run dev:server\" \"pnpm run dev:client\"",
     "build": "turbo run build",
-    "start": "turbo run start",
+    "start": "node apps/server/dist/index.js",
     "start:built": "node apps/server/dist/index.js",
     "lint": "turbo run lint",
     "test": "turbo run test",

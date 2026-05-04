@@ -5,13 +5,11 @@ services:
     plan: starter
     rootDir: .
     buildCommand: pnpm install --frozen-lockfile && pnpm --filter @easy-update/server build
-    startCommand: node apps/server/dist/index.js
+    startCommand: cd /opt/render/project/src && node apps/server/dist/index.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
       - key: DATABASE_URL
         sync: false
       - key: CLERK_SECRET_KEY
