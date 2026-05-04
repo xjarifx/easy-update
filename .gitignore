@@ -35,3 +35,6 @@ data/
 # TypeScript build info
 *.tsbuildinfo
 .turbo
+
+# Coverage reports
+coverage
