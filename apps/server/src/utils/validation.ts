@@ -12,7 +12,7 @@ export const userPreferencesMutationSchema = z.object({
   dateFormat: z.enum(["DD-MMM-YYYY", "MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "MMM DD, YYYY", "DD MMM"]).optional(),
   timeFormat: z.enum(["hh:mm AM/PM", "HH:mm"]).optional(),
   font: z.enum(["Inter", "SF Pro", "System", "Georgia", "Helvetica"]).optional(),
-  firstDayOfWeek: z.number().int().min(0).max(6).optional(),
+  firstDayOfWeek: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6)]).optional(),
 });
 
 export const providerModelsSchema = z.object({

@@ -4,7 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError, BadGatewayError } from "../utils/errors.js";
 import { providerModelsSchema } from "../utils/validation.js";
 
-export const providersRouter = Router();
+export const providersRouter: ReturnType<typeof Router> = Router();
 
 providersRouter.post(
   "/models",
@@ -12,7 +12,7 @@ providersRouter.post(
     const parseResult = providerModelsSchema.safeParse(req.body ?? {});
 
     if (!parseResult.success) {
-      throw new ValidationError(parseResult.error.errors[0].message);
+      throw new ValidationError(parseResult.error.issues[0].message);
     }
 
     const { provider } = parseResult.data;

@@ -12,7 +12,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError, NotFoundError } from "../utils/errors.js";
 import { noticeMutationSchema } from "../utils/validation.js";
 
-export const noticesRouter = Router();
+export const noticesRouter: ReturnType<typeof Router> = Router();
 
 noticesRouter.get(
   "/",
@@ -50,7 +50,7 @@ noticesRouter.post(
     const parseResult = noticeMutationSchema.safeParse(req.body ?? {});
 
     if (!parseResult.success) {
-      throw new ValidationError(parseResult.error.errors[0].message);
+      throw new ValidationError(parseResult.error.issues[0].message);
     }
 
     const result = await createNoticeFromInput(userId, parseResult.data);
@@ -76,7 +76,7 @@ noticesRouter.put(
     const parseResult = noticeMutationSchema.safeParse(req.body ?? {});
 
     if (!parseResult.success) {
-      throw new ValidationError(parseResult.error.errors[0].message);
+      throw new ValidationError(parseResult.error.issues[0].message);
     }
 
     const result = await updateNoticeFromInput(id, userId, parseResult.data);

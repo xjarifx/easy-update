@@ -4,7 +4,7 @@ services:
     env: node
     plan: starter
     rootDir: .
-    buildCommand: pnpm install && pnpm --filter @easy-update/server build
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @easy-update/server build
     startCommand: node apps/server/dist/index.js
     healthCheckPath: /api/health
     envVars:
@@ -22,7 +22,5 @@ services:
         sync: false
       - key: CLIENT-WEB_URL
         sync: false
-      - key: PNPM_HOME
-        value: /opt/render/project/.pnpm-store
-      - key: npm_config_registry
-        value: https://registry.npmjs.org
+      - key: NODE_VERSION
+        value: 22

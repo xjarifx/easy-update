@@ -8,7 +8,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError } from "../utils/errors.js";
 import { userPreferencesMutationSchema } from "../utils/validation.js";
 
-export const userPreferencesRouter = Router();
+export const userPreferencesRouter: ReturnType<typeof Router> = Router();
 
 userPreferencesRouter.get(
   "/",
@@ -27,7 +27,7 @@ userPreferencesRouter.put(
     const parseResult = userPreferencesMutationSchema.safeParse(req.body ?? {});
 
     if (!parseResult.success) {
-      throw new ValidationError(parseResult.error.errors[0].message);
+      throw new ValidationError(parseResult.error.issues[0].message);
     }
 
     const result = await updateUserPreferencesFromInput(userId, parseResult.data);

@@ -298,6 +298,8 @@ export const extractEvents = async (input: {
   apiKey: string;
   inputText: string;
   requestOrigin: string;
+  dateFormat?: string;
+  timeFormat?: string;
 }) => {
   const extractionText = await extractEventJsonFromModel(
     input.provider,

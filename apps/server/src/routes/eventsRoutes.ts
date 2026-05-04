@@ -16,7 +16,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError } from "../utils/errors.js";
 import { calendarEventSchema, eventExtractionSchema } from "../utils/validation.js";
 
-export const eventsRouter = Router();
+export const eventsRouter: ReturnType<typeof Router> = Router();
 
 const toCalendarStart = (date: string, time: string) => {
   const normalizedTime =
@@ -47,7 +47,7 @@ eventsRouter.post(
     const parseResult = calendarEventSchema.safeParse(req.body ?? {});
 
     if (!parseResult.success) {
-      throw new ValidationError(parseResult.error.errors[0].message);
+      throw new ValidationError(parseResult.error.issues[0].message);
     }
 
     const { title, start, moreInfo } = parseResult.data;
@@ -90,7 +90,7 @@ eventsRouter.post(
     const parseResult = eventExtractionSchema.safeParse(req.body ?? {});
 
     if (!parseResult.success) {
-      throw new ValidationError(parseResult.error.errors[0].message);
+      throw new ValidationError(parseResult.error.issues[0].message);
     }
 
     const { text, dateFormat, timeFormat } = parseResult.data;

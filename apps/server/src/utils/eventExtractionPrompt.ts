@@ -18,4 +18,18 @@ const formatReferenceDate = (value: Date) => {
   return `${datePart} ${timePart} ${timeZone}`;
 };
 
-export const buildEventExtractionSystemPrompt = (referenceDate = new Date()) =>
+export const buildEventExtractionSystemPrompt = (referenceDate = new Date()) => {
+  const ref = formatReferenceDate(referenceDate);
+  const dayOfWeek = referenceDate.toLocaleDateString("en-US", { weekday: "long" });
+  const dateStr = referenceDate.toISOString().slice(0, 10);
+
+  return `You are an event extraction assistant. Extract events from the user's text and return them as a JSON array.
+
+Each event should have: title, date (YYYY-MM-DD), time (HH:MM), and moreInfo.
+
+Current reference date: ${ref}
+If the user says a weekday without an explicit date, choose the immediate next occurrence.
+For example: "Monday 2 pm" means ${dateStr} 14:00 if ${dayOfWeek} is not Monday, or the next Monday after that.
+
+Return JSON array only, no markdown formatting.`;
+};
