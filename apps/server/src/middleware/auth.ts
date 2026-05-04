@@ -12,7 +12,10 @@ type AuthenticatedRequest = Request & {
   authUser?: AuthUser;
 };
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET must be defined in environment variables");
+}
 const JWT_EXPIRES_IN = "7d";
 
 export const generateToken = (user: { id: number; email: string }): string => {

@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { AppError } from "../utils/errors.js";
+import logger from "../utils/logger.js";
 
 interface ErrorResponse {
   error: {
@@ -45,16 +46,18 @@ export const errorHandler = (
     },
   };
 
-  // Include stack trace in development
+  // Include stack trace in development only
   if (isDevelopment && !(err instanceof AppError)) {
     response.stack = err.stack;
   }
 
-  // Log error
-  console.error(`[${response.error.statusCode}]`, {
+  // Log error using pino logger
+  logger.error({
+    statusCode: statusCode,
     message: err.message,
     stack: err.stack,
-    timestamp: response.error.timestamp,
+    timestamp: new Date().toISOString(),
+    requestId: (_req as any).requestId,
   });
 
   res.status(statusCode).json(response);

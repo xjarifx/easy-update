@@ -26,7 +26,7 @@ export const noticesTable = pgTable(
     userId: integer("user_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
-    date: text("date").notNull(),
+    date: timestamp("date", { withTimezone: false }).notNull(),
     time: text("time").notNull(),
     title: text("title").notNull(),
     moreInfo: text("more_info").notNull().default(""),
