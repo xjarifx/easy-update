@@ -7,7 +7,7 @@ import {
 } from "../middleware/auth.js";
 import { UnauthorizedError } from "../utils/errors.js";
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
