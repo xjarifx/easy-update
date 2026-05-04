@@ -1,0 +1,14 @@
+{
+  "projects": [
+    {
+      "name": "easy-update-client",
+      "rootDirectory": "apps/client-web",
+      "buildCommand": "pnpm build",
+      "outputDirectory": "dist",
+      "installCommand": "cd ../.. && pnpm install",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  ]
+}
