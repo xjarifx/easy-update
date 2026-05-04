@@ -93,21 +93,26 @@ eventsRouter.post(
       throw new ValidationError(parseResult.error.issues[0].message);
     }
 
-    const { text, dateFormat, timeFormat } = parseResult.data;
+    const { text, inputText, dateFormat, timeFormat, provider: bodyProvider, model: bodyModel, apiKey: bodyApiKey } = parseResult.data;
+    const finalText = text || inputText;
 
-    const provider = process.env.MANAGED_AI_PROVIDER as ProviderId;
-    const apiKey = process.env.MANAGED_AI_API_KEY;
-    const model = process.env.MANAGED_AI_MODEL;
+    if (!finalText) {
+      throw new ValidationError("Text is required");
+    }
+
+    const provider = bodyProvider || process.env.MANAGED_AI_PROVIDER as ProviderId;
+    const apiKey = bodyApiKey || process.env.MANAGED_AI_API_KEY;
+    const model = bodyModel || process.env.MANAGED_AI_MODEL;
 
     if (!provider || !apiKey || !model) {
-      throw new ValidationError("AI provider configuration is missing on server");
+      throw new ValidationError("AI provider configuration is missing - please configure in Settings");
     }
 
     const extractedEvents = await extractEvents({
       provider,
       model,
       apiKey,
-      inputText: text,
+      inputText: finalText,
       requestOrigin: req.get("origin") ?? "http://localhost:4000",
       dateFormat,
       timeFormat,

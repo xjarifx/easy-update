@@ -20,9 +20,13 @@ export const providerModelsSchema = z.object({
 });
 
 export const eventExtractionSchema = z.object({
-  text: z.string().min(1, "Text is required"),
+  text: z.string().min(1, "Text is required").optional(),
+  inputText: z.string().min(1, "Text is required").optional(),
   dateFormat: z.string().optional(),
   timeFormat: z.string().optional(),
+  provider: z.enum(["openrouter", "openai", "anthropic", "google"]).optional(),
+  model: z.string().optional(),
+  apiKey: z.string().optional(),
 });
 
 export const calendarEventSchema = z.object({
