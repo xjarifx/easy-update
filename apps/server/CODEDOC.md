@@ -31,7 +31,7 @@ Request → Middleware → Routes → Services → Repositories → Database
    ↓
 2. cors() + express.json() middleware parse the request
    ↓
-3. requireAuthentication middleware (src/middleware/clerkAuth.ts)
+ 3. requireAuthentication middleware (src/middleware/auth.ts)
    - Extracts Bearer token from Authorization header
    - Verifies JWT with Clerk (verifyToken)
    - Finds/creates user in local DB
@@ -73,19 +73,17 @@ Request → Middleware → Routes → Services → Repositories → Database
   5. `notFoundHandler` → catches unmatched routes (404)
   6. `errorHandler` → catches all errors (must be last)
 
-### 2. Authentication (`src/middleware/clerkAuth.ts`)
+ ### 2. Authentication (`src/middleware/auth.ts`)
 
 **Flow:**
 - Reads `Authorization: Bearer <token>` header
-- Verifies token using `@clerk/backend` `verifyToken()`
-- Looks up user by `clerkId` in local `users` table
-- If user doesn't exist → creates new user + sends welcome email (non-blocking)
-- Attaches `authUser: { id, email, clerkId }` to request
+- Verifies JWT using `jsonwebtoken` `verify()`
+- Looks up user by `id` in local `users` table
+- Attaches `authUser: { id, email }` to request
 - Helper `getAuthenticatedUserId(req)` extracts user ID for routes
 
 **Environment variables:**
-- `CLERK_SECRET_KEY` - For verifying JWTs
-- `CLERK_AUTHORIZED_PARTIES` - Comma-separated allowed origins (optional)
+- `JWT_SECRET` - For signing/verifying JWTs
 
 ### 3. Validation (`src/utils/validation.ts`)
 
@@ -139,7 +137,7 @@ if (!parseResult.success) {
 **1. `users` table**
 ```sql
 - id: serial PRIMARY KEY
-- clerk_id: text UNIQUE NOT NULL (from Clerk)
+   - password_hash: text NOT NULL
 - email: text UNIQUE NOT NULL
 - created_at: timestamp with timezone DEFAULT now()
 ```
@@ -317,7 +315,7 @@ src/
 │   ├── noticesRepository.ts       # Notice DB operations
 │   └── userPreferencesRepository.ts
 ├── middleware/
-│   ├── clerkAuth.ts              # JWT verification + user mgmt
+│   ├── auth.ts              # JWT verification + user management
 │   └── errorHandler.ts           # Global error handling
 └── utils/
     ├── errors.ts                 # Custom error classes

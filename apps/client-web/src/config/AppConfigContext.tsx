@@ -6,7 +6,6 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { useAuth } from "@clerk/clerk-react";
 import {
   fetchUserPreferences,
   toUserPreferences,
@@ -18,6 +17,7 @@ import {
   isValidConfig,
   FONT_STACKS,
 } from "./appConfig";
+import { getToken, isAuthenticated } from "../api/auth";
 
 interface AppConfigContextType {
   config: AppConfigType;
@@ -35,16 +35,15 @@ function applyFontToDocument(fontStack: string): void {
 }
 
 export function AppConfigProvider({ children }: { children: ReactNode }) {
-  const { getToken, isLoaded, isSignedIn, userId } = useAuth();
   const [config, setConfig] = useState<AppConfigType>(DEFAULT_CONFIG);
 
   const persistRemoteConfig = useCallback(
     async (nextConfig: AppConfigType) => {
-      if (!isSignedIn) {
+      if (!isAuthenticated()) {
         return;
       }
 
-      const token = await getToken().catch(() => null);
+      const token = getToken();
 
       if (!token) {
         return;
@@ -54,7 +53,7 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
         console.warn("Failed to save app config to server:", error);
       });
     },
-    [getToken, isSignedIn],
+    [],
   );
 
   useEffect(() => {
@@ -63,11 +62,7 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
   }, [config.font]);
 
   useEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
-
-    if (!isSignedIn || !userId) {
+    if (!isAuthenticated()) {
       setConfig(DEFAULT_CONFIG);
       return;
     }
@@ -75,7 +70,7 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
 
     const hydrateRemoteConfig = async () => {
-      const token = await getToken().catch(() => null);
+      const token = getToken();
 
       if (!token) {
         return;
@@ -102,7 +97,7 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [getToken, isLoaded, isSignedIn, userId]);
+  }, []);
 
   const updateConfig = useCallback((newConfig: Partial<AppConfigType>) => {
     setConfig((prev) => {

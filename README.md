@@ -1,6 +1,6 @@
 # Easy Update
 
-A monorepo for managing notices/events with React frontend, Express backend, and Clerk authentication.
+A monorepo for managing notices/events with React frontend, Express backend, and JWT authentication.
 
 ## Tech Stack
 
@@ -8,7 +8,7 @@ A monorepo for managing notices/events with React frontend, Express backend, and
 - **Package Manager**: pnpm@10.33.2
 - **Client-web**: React + Vite v8 + TypeScript + Tailwind CSS
 - **Server**: Express + TypeScript + Drizzle ORM + PostgreSQL
-- **Auth**: Clerk (token-based, prebuilt components)
+- **Auth**: JWT-based email/password authentication
 - **Email**: Resend (welcome emails)
 - **Shared**: `@easy-update/types` package
 
@@ -31,8 +31,8 @@ easy-update/
 ## Environment Setup
 
 ### Per-project `.env.example` files:
-- `apps/server/.env.example`: `CLERK_SECRET_KEY`, `RESEND_API_KEY`
-- `apps/client-web/.env.example`: `VITE_CLERK_PUBLISHABLE_KEY`
+- `apps/server/.env.example`: `JWT_SECRET`, `RESEND_API_KEY`
+- `apps/client-web/.env.example`: `SERVER_URL`
 
 ### Create your own `.env` files:
 - `apps/server/.env` - Server environment (gitignored)
@@ -90,17 +90,16 @@ pnpm --filter @easy-update/server dev
 4. Run `pnpm run db:migrate`
 5. Use `pnpm run db:studio` to inspect/update data
 
-## Authentication (Clerk)
+## Authentication (JWT Email/Password)
 
-- **Server**: Uses `@clerk/backend` to verify JWT tokens
-- **Client**: Uses `@clerk/clerk-react` with prebuilt `<SignIn>` component
-- **User management**: Clerk handles auth; app DB stores `clerkId` in `users` table
-- **Welcome emails**: Sent via Resend when new users sign up
+- **Server**: Uses JWT tokens with bcrypt password hashing
+- **Client**: Custom login/register forms, token stored in localStorage
+- **User management**: Email/password auth; app DB stores `email` and `password_hash` in `users` table
+- **Welcome emails**: Sent via Resend when new users register
 
-### Clerk Setup:
-1. Create a Clerk application at [clerk.com](https://clerk.com)
-2. Add `CLERK_SECRET_KEY` to `apps/server/.env`
-3. Add `VITE_CLERK_PUBLISHABLE_KEY` to `apps/client-web/.env`
+### Auth Setup:
+1. Set `JWT_SECRET` in `apps/server/.env` (use a strong secret in production)
+2. No third-party auth service needed
 
 ## Email Service (Resend)
 
@@ -116,6 +115,8 @@ pnpm --filter @easy-update/server dev
 ## API Endpoints
 
 - `GET /api/health` - Backend health check
+- `POST /api/auth/register` - Register with email/password (no auth required)
+- `POST /api/auth/login` - Login with email/password (no auth required)
 - `GET /api/notices` - Returns notices from PostgreSQL (requires auth)
 - `POST /api/notices` - Creates a notice with `{ date, time, title, moreInfo }` (requires auth)
 - `PUT /api/notices/:id` - Updates an existing notice (requires auth)

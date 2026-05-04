@@ -10,7 +10,6 @@ export const VALID_PROVIDERS: ProviderId[] = [
 export type AuthUser = {
   id: number;
   email: string;
-  clerkId: string;
 };
 
 export type NoticeRecord = {

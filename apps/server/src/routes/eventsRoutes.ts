@@ -11,7 +11,7 @@ import {
   upsertNoticeFromExtractedInput,
 } from "../services/noticesService.js";
 import { extractEvents } from "../services/eventExtractionService.js";
-import { getAuthenticatedUserId } from "../middleware/clerkAuth.js";
+import { getAuthenticatedUserId } from "../middleware/auth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError } from "../utils/errors.js";
 import { calendarEventSchema, eventExtractionSchema } from "../utils/validation.js";

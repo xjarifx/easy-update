@@ -3,7 +3,7 @@ import {
   getUserPreferences,
   updateUserPreferencesFromInput,
 } from "../services/userPreferencesService.js";
-import { getAuthenticatedUserId } from "../middleware/clerkAuth.js";
+import { getAuthenticatedUserId } from "../middleware/auth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError } from "../utils/errors.js";
 import { userPreferencesMutationSchema } from "../utils/validation.js";

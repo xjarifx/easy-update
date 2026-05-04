@@ -7,7 +7,7 @@ Express API server for managing notices/events with AI-powered event extraction.
 - **Runtime**: Node.js with TypeScript
 - **Framework**: Express v5
 - **ORM**: Drizzle ORM with PostgreSQL
-- **Auth**: Clerk
+- **Auth**: JWT Email/Password
 - **Validation**: Zod
 - **AI Integration**: OpenRouter, OpenAI, Anthropic, Google
 
@@ -31,7 +31,7 @@ Express API server for managing notices/events with AI-powered event extraction.
 
 3. Update `.env` with your credentials:
    - `DATABASE_URL`: PostgreSQL connection string
-   - `CLERK_SECRET_KEY`: Clerk secret key
+   - `JWT_SECRET`: JWT secret key (use strong secret in production)
    - `MANAGED_AI_API_KEY`: AI provider API key
    - `MANAGED_AI_PROVIDER`: AI provider (openrouter/openai/anthropic/google)
    - `MANAGED_AI_MODEL`: AI model name
@@ -71,10 +71,12 @@ OpenAPI/Swagger spec is available at `openapi.yaml`. Use it to:
 
 ### Quick API Overview
 
-All endpoints except `/api/health` require Bearer token authentication via Clerk.
+All endpoints except `/api/health`, `/api/auth/register`, and `/api/auth/login` require Bearer token authentication.
 
 | Method | Endpoint | Description |
 |--------|-----------|-------------|
+| POST | `/api/auth/register` | Register with email/password (public) |
+| POST | `/api/auth/login` | Login with email/password (public) |
 | GET | `/api/health` | Health check (public) |
 | GET | `/api/notices` | List all notices |
 | POST | `/api/notices` | Create a notice |

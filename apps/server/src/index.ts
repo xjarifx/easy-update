@@ -5,7 +5,8 @@ import { eventsRouter } from "./routes/eventsRoutes.js";
 import { noticesRouter } from "./routes/noticesRoutes.js";
 import { providersRouter } from "./routes/providersRoutes.js";
 import { userPreferencesRouter } from "./routes/userPreferencesRoutes.js";
-import { requireAuthentication } from "./middleware/clerkAuth.js";
+import authRouter from "./routes/authRoutes.js";
+import { requireAuthentication } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -21,6 +22,8 @@ app.get("/api/health", (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+app.use("/api/auth", authRouter);
 
 app.use("/api", requireAuthentication);
 

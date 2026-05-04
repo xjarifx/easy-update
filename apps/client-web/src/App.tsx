@@ -24,8 +24,8 @@ import Calendar from "./Calendar";
 import { SettingsPanel } from "./SettingsPanel";
 import { ConfirmModal } from "./ConfirmModal";
 import { AuthScreen } from "./auth/AuthScreen";
-import { useAuth, useUser } from "@clerk/clerk-react";
 import { apiRequest } from "./api/http";
+import { getToken, isAuthenticated, removeToken } from "./api/auth";
 import { extractAndCreateEvents } from "./api/events";
 import { fetchProviderModels } from "./api/providers";
 import {
@@ -212,7 +212,6 @@ function InputPage({
   onUpdateRecentEvent,
   onDeleteRecentEvent,
 }: InputPageProps) {
-  const { getToken } = useAuth();
   const config = useAppConfigSettings();
   const [textInput, setTextInput] = useState("");
   const [documents, setDocuments] = useState<File[]>([]);
@@ -470,7 +469,7 @@ function InputPage({
         apiKey: useManaged ? undefined : decryptedApiKey,
         inputText: trimmedText,
         signal: abortController.signal,
-        token: await getToken().catch(() => null),
+        token: getToken(),
       });
 
       const createdCount = response.createdCount ?? 0;
@@ -1485,7 +1484,6 @@ function NoticePage({
 }
 
 function SettingPage() {
-  const { getToken } = useAuth();
   const [provider, setProvider] = useState<ProviderId>("openrouter");
   const [apiKey, setApiKey] = useState("");
   const [availableModels, setAvailableModels] = useState<string[]>([]);
@@ -1570,7 +1568,7 @@ function SettingPage() {
       const models = await fetchProviderModels(
         provider,
         key,
-        await getToken().catch(() => null),
+        getToken(),
       );
 
       const normalizedModels = models
@@ -1597,7 +1595,7 @@ function SettingPage() {
     } finally {
       setIsLoadingModels(false);
     }
-  }, [apiKey, getToken, provider, useManagedService]);
+  }, [apiKey, provider, useManagedService]);
 
   useEffect(() => {
     if (isHydrating) {
@@ -1803,8 +1801,6 @@ function SettingPage() {
 }
 
 function App() {
-  const { isSignedIn, signOut, getToken } = useAuth();
-  const { user, isLoaded } = useUser();
   const [activePage, setActivePage] = useState<Page>(() =>
     readSavedActivePage(),
   );
@@ -1837,7 +1833,7 @@ function App() {
         }
         setNoticesError("");
 
-        const token = isSignedIn ? await getToken().catch(() => null) : null;
+        const token = getToken();
         const noticeData = await fetchNotices(token);
         setNotices(sortNoticesAsc(noticeData ?? []));
       } catch (err) {
@@ -1850,37 +1846,37 @@ function App() {
         }
       }
     },
-    [isSignedIn, getToken],
+    [],
   );
 
   const createNotice = useCallback(
     async (notice: NoticeMutationInput) => {
-      const token = isSignedIn ? await getToken().catch(() => null) : null;
+      const token = getToken();
       await createNoticeRequest(notice, token);
 
       await loadNotices();
     },
-    [loadNotices, isSignedIn, getToken],
+    [loadNotices],
   );
 
   const updateNotice = useCallback(
     async (id: number, notice: NoticeMutationInput) => {
-      const token = isSignedIn ? await getToken().catch(() => null) : null;
+      const token = getToken();
       await updateNoticeRequest(id, notice, token);
 
       await loadNotices();
     },
-    [loadNotices, isSignedIn, getToken],
+    [loadNotices],
   );
 
   const deleteNotice = useCallback(
     async (id: number) => {
-      const token = isSignedIn ? await getToken().catch(() => null) : null;
+      const token = getToken();
       await deleteNoticeRequest(id, token);
 
       await loadNotices();
     },
-    [loadNotices, isSignedIn, getToken],
+    [loadNotices],
   );
 
   useEffect(() => {
@@ -1912,13 +1908,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (isSignedIn) {
+    if (isAuthenticated()) {
       void loadNotices();
     }
-  }, [loadNotices, isSignedIn]);
+  }, [loadNotices]);
 
   useEffect(() => {
-    if (!isSignedIn) return;
+    if (!isAuthenticated()) return;
 
     const intervalId = window.setInterval(() => {
       void loadNotices({ background: true });
@@ -1938,19 +1934,9 @@ function App() {
       window.removeEventListener("focus", handleVisibilityOrFocus);
       document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
     };
-  }, [loadNotices, isSignedIn]);
+  }, [loadNotices]);
 
-  if (!isLoaded) {
-    return (
-      <main className="auth-shell min-h-screen items-center justify-center">
-        <div className="auth-card">
-          <p className="neo-label text-sm">Checking your session...</p>
-        </div>
-      </main>
-    );
-  }
-
-  if (!isSignedIn) {
+  if (!isAuthenticated()) {
     return <AuthScreen />;
   }
 
@@ -1997,11 +1983,10 @@ function App() {
           </nav>
 
           <div className="mt-6 border-t border-slate-200 pt-4">
-            <p className="text-xs font-semibold text-slate-600">Signed in as</p>
-            <p className="neo-label mt-1 truncate text-sm">{user?.primaryEmailAddress?.emailAddress}</p>
+            <p className="text-xs font-semibold text-slate-600">Signed in</p>
             <button
               type="button"
-              onClick={() => signOut()}
+              onClick={() => { removeToken(); window.location.reload(); }}
               className="neo-button-secondary mt-3 inline-flex w-full items-center justify-center gap-2 px-3 py-2 text-xs"
             >
               <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
