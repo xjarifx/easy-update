@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: easy-update-server
+    env: node
+    plan: starter
+    rootDir: .
+    buildCommand: pnpm install && pnpm --filter @easy-update/server build
+    startCommand: node apps/server/dist/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MANAGED_AI_API_KEY
+        sync: false
+      - key: CLIENT-WEB_URL
+        sync: false
+      - key: PNPM_HOME
+        value: /opt/render/project/.pnpm-store
+      - key: npm_config_registry
+        value: https://registry.npmjs.org
