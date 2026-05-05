@@ -4,9 +4,8 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 import express from "express";
 import helmet from "helmet";
-import { requestIdMiddleware } = from "./middleware/requestId.js";
+import { requestIdMiddleware } from "./middleware/requestId.js";
 import httpLogger from "./middleware/requestLogger.js";
-import { csrfProtection, csrfErrorHandler } = from "./middleware/csrfProtection.js";
 import { eventsRouter } from "./routes/eventsRoutes.js";
 import { noticesRouter } from "./routes/noticesRoutes.js";
 import { providersRouter } from "./routes/providersRoutes.js";
@@ -22,7 +21,7 @@ const port = Number(process.env.PORT ?? 4000);
 app.use(helmet());
 // Configure CORS with specific origins
 const allowedOrigins = [
-  process.env.CLIENT-WEB_URL,
+  process.env.CLIENT_WEB_URL,
   "http://localhost:5173",
   "http://localhost:3000",
   "https://easy-update.vercel.app"
@@ -44,21 +43,13 @@ app.use(cors({
 app.use(requestIdMiddleware);
 // Request logging
 app.use(httpLogger);
-// Cookie parser for CSRF
+// Cookie parser (needed even if we don't use cookies for auth, might be used elsewhere)
 app.use(cookieParser());
-// CSRF protection - exempt auth routes since they don't need CSRF
-app.use("/api/auth/", (req, res, next) => {
-  // Skip CSRF for auth routes
-  next();
-});
-app.use(csrfProtection);
-// CSRF error handling
-app.use(csrfErrorHandler);
-// Compression
-app.use(compression());
-// Body parsing
+
+// Body parsing - must come BEFORE routes and rate limiters
 app.use(express.json());
 
+// Mount auth routes (public endpoints)
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
@@ -69,8 +60,10 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRouter);
 
+// Protect all other API routes with authentication
 app.use("/api", requireAuthentication);
 
+// Mount API routes
 app.use("/api/notices", noticesRouter);
 app.use("/api/events", eventsRouter);
 app.use("/api/providers", providersRouter);

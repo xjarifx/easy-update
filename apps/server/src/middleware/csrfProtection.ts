@@ -12,6 +12,7 @@ export const csrfProtection = csrf({
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
   },
+  ignoreMethods: ['GET', 'HEAD', 'OPTIONS']
 });
 
 /**
