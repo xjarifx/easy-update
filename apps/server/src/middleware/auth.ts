@@ -124,7 +124,7 @@ export const registerUser = async (email: string, password: string) => {
     .returning();
 
   if (user.email) {
-    sendWelcomeEmail(user.email).catch((err) =>
+    sendWelcomeEmail().catch((err) =>
       console.error("Failed to send welcome email:", err),
     );
   }

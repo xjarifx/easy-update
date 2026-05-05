@@ -57,7 +57,7 @@ export const errorHandler = (
     message: err.message,
     stack: err.stack,
     timestamp: new Date().toISOString(),
-    requestId: (_req as any).requestId,
+    requestId: (_req as { requestId?: string }).requestId,
   });
 
   res.status(statusCode).json(response);

@@ -1,5 +1,4 @@
 import { Router } from "express";
-import type { RequestHandler } from "express";
 import { z } from "zod";
 import {
   registerUser,

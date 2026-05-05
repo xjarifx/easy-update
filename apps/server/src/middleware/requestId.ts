@@ -1,17 +1,19 @@
 import { v4 as uuidv4 } from "uuid";
 import type { Request, Response, NextFunction } from "express";
+import type { Logger } from "pino";
+import logger from "../utils/logger.js";
 
 /**
  * Request ID middleware
  * Adds a unique request ID to each request for tracing
  */
 export const requestIdMiddleware = (
-  req: Request,
+  req: Request & { requestId?: string },
   _res: Response,
   next: NextFunction
 ) => {
   const requestId = req.get("X-Request-ID") ?? uuidv4();
-  (req as any).requestId = requestId;
+  req.requestId = requestId;
   
   // Also set it on the response header for client access
   _res.set("X-Request-ID", requestId);
@@ -24,11 +26,11 @@ export const requestIdMiddleware = (
  * Logs requests with timing and request ID
  */
 export const requestLoggerWithId = (
-  req: Request,
+  req: Request & { requestId?: string },
   _res: Response,
   next: NextFunction
 ) => {
-  const requestId = (req as any).requestId;
+  const requestId = req.requestId;
   const startTime = Date.now();
   
   // Log request start
@@ -37,9 +39,7 @@ export const requestLoggerWithId = (
   // Attach request ID to response when finished
   _res.on("finish", () => {
     const duration = Date.now() - startTime;
-    // Import logger here to avoid circular dependencies
-    const logger = (global as any).logger || require("../utils/logger.js").default;
-    logger.info({
+    (logger as Logger).info({
       requestId,
       method: req.method,
       url: req.url,

@@ -3,7 +3,7 @@
 
 import logger from "../utils/logger.js";
 
-export const sendWelcomeEmail = async (_to: string) => {
+export const sendWelcomeEmail = async () => {
   logger.info("Welcome email sending skipped - email service disabled");
   return true;
 };

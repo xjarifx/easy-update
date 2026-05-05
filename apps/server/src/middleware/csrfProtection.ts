@@ -1,5 +1,4 @@
 import csrf from "csurf";
-import cookieParser from "cookie-parser";
 import { type Request, type Response, type NextFunction } from "express";
 
 /**
@@ -19,10 +18,9 @@ export const csrfProtection = csrf({
  * Middleware to handle CSRF errors
  */
 export const csrfErrorHandler = (
-  err: Error,
+  err: Error & { code?: string },
   _req: Request,
   res: Response,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next: NextFunction,
 ) => {
   if (err.code === "EBADCSRFTOKEN") {
