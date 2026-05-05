@@ -69,7 +69,7 @@ Easy Update is a full-stack application designed to help users manage notices, e
      DATABASE_URL=your_postgresql_connection_string
      JWT_SECRET=your_cryptographically_random_secret_here
      MANAGED_AI_API_KEY=your_ai_api_key
-     CLIENT-WEB_URL=http://localhost:5173
+     CLIENT_WEB_URL=http://localhost:5173
      ```
 
 4. Set up the database:
@@ -98,7 +98,7 @@ Required environment variables in `apps/server/.env`:
 | DATABASE_URL | PostgreSQL connection string | postgres://user:pass@localhost:5432/dbname |
 | JWT_SECRET | Secret for JWT token generation (32+ chars) | your_super_secret_key_here |
 | MANAGED_AI_API_KEY | API key for AI services | sk-or-v1-... |
-| CLIENT-WEB_URL | Frontend URL for CORS | http://localhost:5173 |
+| CLIENT_WEB_URL | Frontend URL for CORS | http://localhost:5173 |
 
 ## Available Scripts
 

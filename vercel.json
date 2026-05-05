@@ -2,7 +2,7 @@
   "projects": [
     {
       "name": "easy-update-client",
-      "rootDirectory": "apps/client-web",
+      "rootDirectory": "apps/client_web",
       "buildCommand": "pnpm build",
       "outputDirectory": "dist",
       "installCommand": "cd ../.. && pnpm install",

@@ -3,7 +3,7 @@
 ## Monorepo Structure
 - pnpm workspace: `apps/*`, `packages/*`
 - `@easy-update/server` - Express backend (entry: `apps/server/src/index.ts`)
-- `@easy-update/client-web` - React frontend (entry: `apps/client-web/src/main.tsx`)
+- `@easy-update/client_web` - React frontend (entry: `apps/client_web/src/main.tsx`)
 - `@easy-update/types` - shared types (source-only, no build output)
 
 ## Commands

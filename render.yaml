@@ -14,7 +14,7 @@ services:
         sync: false
       - key: MANAGED_AI_API_KEY
         sync: false
-      - key: CLIENT-WEB_URL
+      - key: CLIENT_WEB_URL
         sync: false
       - key: NODE_VERSION
         value: 22

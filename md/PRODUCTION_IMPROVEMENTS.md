@@ -162,7 +162,7 @@ This project has made significant progress toward production readiness. Critical
 
 ### ## 9. Environment Configuration (Mostly Addressed)
 #### Complaints:
-- **Missing environment variables**: CLIENT-WEB_URL, MANAGED_AI_API_KEY not validated
+- **Missing environment variables**: CLIENT_WEB_URL, MANAGED_AI_API_KEY not validated
 
 #### Required Improvements:
 - Add runtime validation for required env vars at startup (partially done)
