@@ -1,22 +1,26 @@
-import csrf from "csurf";
 import { type Request, type Response, type NextFunction } from "express";
+import { doubleCsrf, type DoubleCsrfUtilities } from "csrf-csrf";
 
-/**
- * CSRF protection middleware
- * Initializes CSRF protection with cookie storage
- */
-export const csrfProtection = csrf({
-  cookie: {
+const csrfUtilities: DoubleCsrfUtilities = doubleCsrf({
+  getSecret: () => process.env.JWT_SECRET || "change-me-in-production",
+  getSessionIdentifier: (req: Request) => (req as unknown as { sessionID?: string }).sessionID || (req.headers["x-forwarded-for"] as string) || req.ip || "anonymous",
+  cookieName: "csrf_token",
+  cookieOptions: {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
   },
-  ignoreMethods: ['GET', 'HEAD', 'OPTIONS']
+  size: 64,
+  ignoredMethods: ["GET", "HEAD", "OPTIONS"],
 });
 
-/**
- * Middleware to handle CSRF errors
- */
+export const csrfProtection = csrfUtilities.doubleCsrfProtection;
+
+export const generateCsrfToken = (req: Request, res: Response) => {
+  const token = csrfUtilities.generateCsrfToken(req, res);
+  res.json({ csrfToken: token });
+};
+
 export const csrfErrorHandler = (
   err: Error & { code?: string },
   _req: Request,
@@ -33,6 +37,5 @@ export const csrfErrorHandler = (
     });
   }
 
-  // Pass other errors to the global error handler
   _next(err);
 };
