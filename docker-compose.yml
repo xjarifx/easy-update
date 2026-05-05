@@ -1,8 +1,7 @@
 version: '3.8'
 
 services:
-  # Express server service
-  server:
+  app:
     build:
       context: .
       dockerfile: Dockerfile.server
@@ -19,19 +18,3 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # Client web service (Nginx)
-  client:
-    build:
-      context: .
-      dockerfile: Dockerfile.client
-    ports:
-      - "80:80"
-    depends_on:
-      server:
-        condition: service_healthy
-    restart: unless-stopped
-
-networks:
-  default:
-    driver: bridge

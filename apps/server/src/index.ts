@@ -1,9 +1,10 @@
 import "dotenv/config";
 import cors from "cors";
-import compression from "compression";
 import cookieParser from "cookie-parser";
 import express from "express";
 import helmet from "helmet";
+import path from "path";
+import { fileURLToPath } from "url";
 import { requestIdMiddleware } from "./middleware/requestId.js";
 import httpLogger from "./middleware/requestLogger.js";
 import { eventsRouter } from "./routes/eventsRoutes.js";
@@ -13,6 +14,10 @@ import { userPreferencesRouter } from "./routes/userPreferencesRoutes.js";
 import authRouter from "./routes/authRoutes.js";
 import { requireAuthentication } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientDistPath = path.join(__dirname, "..", "client_dist");
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
@@ -69,8 +74,16 @@ app.use("/api/events", eventsRouter);
 app.use("/api/providers", providersRouter);
 app.use("/api/preferences", userPreferencesRouter);
 
-// 404 handler (must be after all routes)
-app.use(notFoundHandler);
+// Serve static client files
+app.use(express.static(clientDistPath));
+
+// 404 handler for API routes (must be after API routes)
+app.use("/api", notFoundHandler);
+
+// SPA fallback - serve index.html for all non-API routes
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(clientDistPath, "index.html"));
+});
 
 // Global error handler (must be last)
 app.use(errorHandler);
